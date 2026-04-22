@@ -43,3 +43,29 @@ def get_profile(tenant_id: str, profile_id: str) -> UserProfileView:
             return profile
     return profiles[0]
 
+
+def create_dynamic_profile(
+    tenant_id: str,
+    profile_id: str,
+    display_name: str,
+    email: str,
+    description: str,
+) -> UserProfileView:
+    profile = UserProfileView(
+        id=profile_id,
+        tenant_id=tenant_id,
+        display_name=display_name,
+        email=email,
+        persona_label="Onboarded User",
+        description=description,
+        operating_mode="live_connectors",
+        seeded_data_enabled=False,
+        capabilities=["policy:read", "policy:write", "payment:approve", "audit:read"],
+        default_vendor_count=0,
+        integration_status_summary="Account created. Connect integrations to start.",
+    )
+    if tenant_id not in _PROFILES:
+        _PROFILES[tenant_id] = []
+    _PROFILES[tenant_id].append(profile)
+    return profile
+

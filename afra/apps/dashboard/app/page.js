@@ -53,29 +53,60 @@ export default function HomePage() {
   const [payments, setPayments] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [integrations, setIntegrations] = useState([]);
+  const [policies, setPolicies] = useState([]);
   const [workflowDetail, setWorkflowDetail] = useState(null);
+  const [auditEvents, setAuditEvents] = useState([]);
   const [seedResult, setSeedResult] = useState(null);
+  const [showPolicyModal, setShowPolicyModal] = useState(false);
+  const [newPolicy, setNewPolicy] = useState({
+    category: "utility",
+    vendor_name: "",
+    max_amount_minor: 50000,
+    currency: "INR",
+    requires_hitl_above_minor: 20000,
+  });
   const [statusMessage, setStatusMessage] = useState("Choose a persona to start the interactive demo.");
   const [loading, setLoading] = useState(false);
 
   async function refreshConsole(profileId = selectedProfile) {
     setLoading(true);
     try {
-      const [profileData, scenarioData, paymentData, reviewData, integrationData] = await Promise.all([
+      const [profileData, scenarioData, paymentData, reviewData, integrationData, policyData] = await Promise.all([
         callApi("/api/v1/profiles/me", { profileId }),
         callApi("/api/v1/demo/scenarios", { profileId }),
         callApi("/api/v1/payments", { profileId }),
         callApi("/api/v1/reviews", { profileId }),
         callApi("/api/v1/integrations/realtime", { profileId }),
+        callApi("/api/v1/policies", { profileId }),
       ]);
       setProfile(profileData);
       setScenarios(scenarioData.filter((item) => item.persona === profileId));
       setPayments(paymentData);
       setReviews(reviewData);
       setIntegrations(integrationData.connectors);
+      setPolicies(policyData);
       setStatusMessage(`Loaded ${profileData.display_name} console data.`);
     } catch (error) {
       setStatusMessage(`Unable to load console data: ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleCreatePolicy(e) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      await callApi("/api/v1/policies", {
+        method: "POST",
+        profileId: selectedProfile,
+        body: newPolicy,
+      });
+      setShowPolicyModal(false);
+      setStatusMessage(`Created policy for ${newPolicy.vendor_name}.`);
+      await refreshConsole(selectedProfile);
+    } catch (error) {
+      setStatusMessage(`Failed to create policy: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -106,8 +137,12 @@ export default function HomePage() {
   async function handleWorkflowOpen(workflowId) {
     setLoading(true);
     try {
-      const workflow = await callApi(`/api/v1/workflows/${workflowId}`, { profileId: selectedProfile });
+      const [workflow, events] = await Promise.all([
+        callApi(`/api/v1/workflows/${workflowId}`, { profileId: selectedProfile }),
+        callApi(`/api/v1/workflows/${workflowId}/audit-events`, { profileId: selectedProfile }),
+      ]);
       setWorkflowDetail(workflow);
+      setAuditEvents(events);
       setStatusMessage(`Loaded workflow ${workflowId}.`);
     } catch (error) {
       setStatusMessage(`Could not load workflow: ${error.message}`);
@@ -196,6 +231,9 @@ export default function HomePage() {
             <button className="secondary-button" onClick={() => refreshConsole(selectedProfile)} type="button" disabled={!sessionStarted || loading}>
               Refresh Console
             </button>
+            <a href="/onboarding" className="secondary-button" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+              Create New Account
+            </a>
           </div>
           <p className="status-banner">{loading ? "Working..." : statusMessage}</p>
           {seedResult ? (
@@ -340,19 +378,52 @@ export default function HomePage() {
           </div>
           {workflowDetail ? (
             <div className="detail-stack">
-              <p>Workflow ID: {workflowDetail.id}</p>
-              <p>State: {workflowDetail.current_state}</p>
-              <p>Decision: {workflowDetail.decision}</p>
-              <p>X-Request-ID: {workflowDetail.x_request_id}</p>
-              <p>Payment Intent: {workflowDetail.payment_intent_id || "Not created"}</p>
-              <p>Payment ID: {workflowDetail.payment_id || "Not created"}</p>
-              <p>Ledger Sync: {workflowDetail.ledger_sync_id || "Not created"}</p>
+              <div className="stat-card" style={{ marginBottom: '24px' }}>
+                <p className="card-label">Terminal State</p>
+                <h2>{workflowDetail.current_state}</h2>
+                <p>Outcome: {workflowDetail.decision}</p>
+              </div>
+
+              <div className="panel-header">
+                <p className="panel-kicker">Retrieved Evidence</p>
+              </div>
               <div className="evidence-list">
                 {workflowDetail.evidence.map((item, index) => (
                   <div className="evidence-card" key={`${item.source}-${index}`}>
                     <strong>{item.source}</strong>
                     <p>{item.summary}</p>
-                    <span>Confidence: {Math.round(item.confidence * 100)}%</span>
+                    <div className="evidence-viz">
+                      <div className="confidence-label">
+                        <span>Confidence</span>
+                        <span>{Math.round(item.confidence * 100)}%</span>
+                      </div>
+                      <div className="confidence-bar-bg">
+                        <div 
+                          className="confidence-bar-fill" 
+                          style={{ width: `${item.confidence * 100}%`, background: item.confidence > 0.8 ? '#0a7f6f' : '#8f3c2d' }} 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="panel-header" style={{ marginTop: '32px' }}>
+                <p className="panel-kicker">Execution Timeline</p>
+              </div>
+              <div className="timeline">
+                {auditEvents.map((event, index) => (
+                  <div className="timeline-item animate-fade-in" key={event.id}>
+                    <div className={`timeline-dot ${index === auditEvents.length - 1 ? 'active' : ''}`}>
+                      {index + 1}
+                    </div>
+                    <div className="timeline-content">
+                      <h4>{event.event_type.replace(/_/g, ' ')}</h4>
+                      <p>{JSON.stringify(event.payload)}</p>
+                      <div className="timeline-time">
+                        {new Date(event.created_at).toLocaleTimeString()}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -376,6 +447,100 @@ export default function HomePage() {
           </ul>
         </article>
       </section>
+      <section className="content-grid">
+        <article className="panel">
+          <div className="panel-header">
+            <p className="panel-kicker">Payment Policies</p>
+            <h3>Governance rules for autonomous payments</h3>
+          </div>
+          <div className="action-row">
+            <button className="primary-button" onClick={() => setShowPolicyModal(true)} disabled={!sessionStarted}>
+              New Policy
+            </button>
+          </div>
+          <div className="policy-grid">
+            {policies.map((policy) => (
+              <div className="policy-card animate-fade-in" key={policy.id}>
+                <div className="policy-header">
+                  <span className={`status-tag ${policy.status}`}>{policy.status}</span>
+                  <span className="panel-kicker">{policy.category}</span>
+                </div>
+                <strong>{policy.vendor_name}</strong>
+                <div className="policy-amount">{formatMoney(policy.max_amount_minor, policy.currency)}</div>
+                <div className="policy-meta">
+                  HITL trigger above {formatMoney(policy.requires_hitl_above_minor, policy.currency)}
+                </div>
+              </div>
+            ))}
+            {!policies.length ? <p className="empty-state">No policies defined for this tenant.</p> : null}
+          </div>
+        </article>
+      </section>
+
+      {showPolicyModal && (
+        <div className="modal-overlay" onClick={() => setShowPolicyModal(false)}>
+          <div className="panel modal-content animate-fade-in" onClick={(e) => e.stopPropagation()}>
+            <div className="panel-header">
+              <p className="panel-kicker">Governance</p>
+              <h3>Create Payment Policy</h3>
+            </div>
+            <form className="onboarding-form" onSubmit={handleCreatePolicy}>
+              <div className="form-group">
+                <label>Vendor Name</label>
+                <input
+                  className="form-input"
+                  placeholder="e.g. Tata Power"
+                  required
+                  value={newPolicy.vendor_name}
+                  onChange={(e) => setNewPolicy({ ...newPolicy, vendor_name: e.target.value })}
+                />
+              </div>
+              <div className="form-group">
+                <label>Category</label>
+                <select
+                  className="form-input"
+                  value={newPolicy.category}
+                  onChange={(e) => setNewPolicy({ ...newPolicy, category: e.target.value })}
+                >
+                  <option value="utility">Utility</option>
+                  <option value="telecom">Telecom</option>
+                  <option value="software">SaaS</option>
+                  <option value="vendor">General Vendor</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Max Autopay Limit (₹)</label>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={newPolicy.max_amount_minor / 100}
+                  onChange={(e) => setNewPolicy({ ...newPolicy, max_amount_minor: e.target.value * 100 })}
+                />
+              </div>
+              <div className="form-group">
+                <label>HITL Threshold (₹)</label>
+                <p className="hero-copy" style={{ fontSize: '0.8rem', margin: '0 0 8px' }}>
+                  Payments above this will require human approval.
+                </p>
+                <input
+                  type="number"
+                  className="form-input"
+                  value={newPolicy.requires_hitl_above_minor / 100}
+                  onChange={(e) => setNewPolicy({ ...newPolicy, requires_hitl_above_minor: e.target.value * 100 })}
+                />
+              </div>
+              <div className="action-row">
+                <button className="primary-button" type="submit" disabled={loading}>
+                  {loading ? "Creating..." : "Save Policy"}
+                </button>
+                <button className="secondary-button" type="button" onClick={() => setShowPolicyModal(false)}>
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

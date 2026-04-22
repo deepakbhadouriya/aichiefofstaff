@@ -1,0 +1,12 @@
+INVOICE #INV-2024-001
+DATE: 2024-04-10
+VENDOR: Tata Power
+ACCOUNT: 123456789
+AMOUNT: INR 4500.00
+DUE DATE: 2024-04-25
+
+Details:
+Monthly electricity consumption for SME office.
+Fixed charge: 500
+Variable charge: 4000
+Total: 4500

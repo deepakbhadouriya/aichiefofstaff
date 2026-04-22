@@ -1,0 +1,9 @@
+BILLING STATEMENT
+BILLER: Airtel Business
+REF: 987654321
+DATE: 2024-04-12
+TOTAL DUE: INR 2999.00
+
+Plan: Office Fiber 1Gbps
+Period: Apr 2024
+Auto-pay enabled: No
