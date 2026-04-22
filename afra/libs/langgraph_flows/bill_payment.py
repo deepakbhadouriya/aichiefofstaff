@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-
+from services.personas.service import get_profile
 from libs.schemas.runtime import WorkflowRunRecord
 from libs.schemas.workflow import WorkflowEvidence, WorkflowRunRequest, WorkflowRunView
 from libs.time import utc_now
@@ -8,7 +8,6 @@ from services.ledger_sync.service import sync_payment_outcome
 from services.payments.service import execute_payment, fetch_live_bill, get_or_create_payment_intent
 from services.policy.service import choose_policy_for_vendor
 from services.retrieval.service import retrieve_evidence
-
 
 @dataclass
 class BillPaymentState:
@@ -26,12 +25,10 @@ class BillPaymentState:
     payment_intent_id: str | None = None
     payment_id: str | None = None
     ledger_sync_id: str | None = None
+    reasoning: str | None = None
     created_at: object | None = None
 
-
 class BillPaymentFlow:
-    """A deterministic scaffold mirroring the LangGraph nodes from the blueprint."""
-
     def run(
         self,
         tenant_id: str,
@@ -89,10 +86,33 @@ class BillPaymentFlow:
         self._checkpoint(workflow_id, state)
 
     def validate_bill(self, workflow_id: str, state: BillPaymentState) -> None:
+        profile = get_profile(state.tenant_id, state.profile_id)
         policy = choose_policy_for_vendor(state.tenant_id, state.request.vendor_name)
+        
+        # Decision Logic with Persona Context
         exceeds_threshold = state.amount_minor > policy.requires_hitl_above_minor
         no_strong_evidence = all(item.confidence < 0.8 for item in state.evidence)
+        
         state.requires_human_review = exceeds_threshold or no_strong_evidence
+        
+        # Chain of Thought Generation (Simulating Agentic Reasoning)
+        reasoning_steps = [
+            f"Persona Style: {profile.communication_style}",
+            f"Decision Pref: {profile.decision_preferences}",
+            f"Validating {state.request.vendor_name} bill against threshold of {policy.requires_hitl_above_minor}."
+        ]
+        
+        if exceeds_threshold:
+            reasoning_steps.append(f"ALERT: Bill amount {state.amount_minor} exceeds threshold. Routing for human review as per SME preference.")
+        else:
+            reasoning_steps.append("Bill amount is within safe operational limits.")
+            
+        if no_strong_evidence:
+            reasoning_steps.append("WARNING: Weak evidence link between Gmail and Drive. Flagging for manual verification.")
+        else:
+            reasoning_steps.append("SUCCESS: Strong evidence match found in historical data.")
+            
+        state.reasoning = " | ".join(reasoning_steps)
         state.current_state = "validated"
         self._checkpoint(workflow_id, state)
 
@@ -143,6 +163,7 @@ class BillPaymentFlow:
             payload={
                 "current_state": state.current_state,
                 "decision": state.decision,
+                "reasoning": state.reasoning,
                 "payment_intent_id": state.payment_intent_id,
                 "payment_id": state.payment_id,
                 "ledger_sync_id": state.ledger_sync_id,
@@ -169,6 +190,7 @@ class BillPaymentFlow:
             integration_mode=state.integration_mode,
             requires_human_review=state.requires_human_review,
             evidence=state.evidence,
+            reasoning=state.reasoning,
             payment_intent_id=state.payment_intent_id,
             payment_id=state.payment_id,
             ledger_sync_id=state.ledger_sync_id,
@@ -190,6 +212,7 @@ class BillPaymentFlow:
             integration_mode=record.integration_mode,
             requires_human_review=record.requires_human_review,
             evidence=record.evidence,
+            reasoning=record.reasoning,
             payment_intent_id=record.payment_intent_id,
             payment_id=record.payment_id,
             ledger_sync_id=record.ledger_sync_id,

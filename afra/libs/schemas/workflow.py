@@ -30,5 +30,6 @@ class WorkflowRunView(BaseModel):
     evidence: list[WorkflowEvidence]
     payment_intent_id: str | None = None
     payment_id: str | None = None
-    ledger_sync_id: str | None = None
+    ledger_sync_id: Optional[str] = None
+    reasoning: Optional[str] = None
     created_at: datetime
