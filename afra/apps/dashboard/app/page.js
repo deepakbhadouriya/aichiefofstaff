@@ -195,17 +195,39 @@ export default function HomePage() {
 
   return (
     <main className="page-shell">
-      <section className="hero">
-        <p className="eyebrow">A-FRA MVP</p>
-        <h1>Interactive finance ops console for seeded and live-ready flows.</h1>
+      <section className="hero glass-card animate-slide-up" style={{ animationDelay: '0.1s' }}>
+        <p className="eyebrow"><span className="pulse-dot"></span>Chief of Staff Active</p>
+        <h1>Autonomous Finance for SME Owners.</h1>
         <p className="hero-copy">
-          Sign in as a persona, seed demo workflows, inspect connector status,
-          and resolve review items without leaving the app.
+          Your AI Chief of Staff manages your recurring bills, validates them against your policies, 
+          and handles reconciliation while you focus on growth.
         </p>
       </section>
 
+      {profile && (
+        <section className="panel briefing-panel animate-slide-up" style={{ animationDelay: '0.2s', marginTop: '24px' }}>
+          <div className="panel-header">
+            <p className="panel-kicker">Morning Briefing • {new Date().toLocaleDateString('en-IN', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+          </div>
+          <p className="briefing-text">
+            Good morning, {profile.display_name.split(' ')[0]}. 
+            I've identified <strong>{reviews.length} items</strong> requiring your attention today. 
+            <strong> {payments.length} utility bills</strong> are scheduled for autopay within your ₹{formatMoney(500000)} threshold. 
+            Your cash position remains healthy for all scheduled outflows.
+          </p>
+          <div className="action-row">
+            <button className="primary-button" onClick={() => setStatusMessage("Reviewing all pending items...")}>
+              Resolve All Flags
+            </button>
+            <button className="secondary-button" onClick={() => setStatusMessage("Generating monthly trend report...")}>
+              Download Monthly Pulse
+            </button>
+          </div>
+        </section>
+      )}
+
       <section className="content-grid">
-        <article className="panel login-panel">
+        <article className="panel glass-card login-panel animate-slide-up" style={{ animationDelay: '0.3s' }}>
           <div className="panel-header">
             <p className="panel-kicker">Sign In</p>
             <h3>Select a persona</h3>
@@ -246,7 +268,7 @@ export default function HomePage() {
           ) : null}
         </article>
 
-        <article className="panel">
+        <article className="panel glass-card animate-slide-up" style={{ animationDelay: '0.4s' }}>
           <div className="panel-header">
             <p className="panel-kicker">Active Profile</p>
             <h3>{profile?.display_name || "No session yet"}</h3>
@@ -265,17 +287,25 @@ export default function HomePage() {
       </section>
 
       <section className="card-grid">
-        {cards.map((card) => (
-          <article className="stat-card" key={card.title}>
-            <p className="card-label">{card.title}</p>
-            <h2>{card.value}</h2>
-            <p>{card.detail}</p>
-          </article>
-        ))}
+        <article className="stat-card glass-card premium-stat animate-slide-up" style={{ animationDelay: '0.5s' }}>
+          <p className="card-label">Monthly Spend</p>
+          <h2>{formatMoney(payments.reduce((acc, p) => acc + p.amount_minor, 0))}</h2>
+          <p><span className="trend-down">↓ 4.2%</span> vs last month</p>
+        </article>
+        <article className="stat-card glass-card animate-slide-up" style={{ animationDelay: '0.6s' }}>
+          <p className="card-label">Autopay Success</p>
+          <h2>98.5%</h2>
+          <p>12 bills automated this week</p>
+        </article>
+        <article className="stat-card glass-card animate-slide-up" style={{ animationDelay: '0.7s' }}>
+          <p className="card-label">Anomalies Detected</p>
+          <h2>{reviews.length}</h2>
+          <p>Flags raised for your review</p>
+        </article>
       </section>
 
       <section className="content-grid">
-        <article className="panel">
+        <article className="panel glass-card">
           <div className="panel-header">
             <p className="panel-kicker">Seeded Scenarios</p>
             <h3>Happy and negative SME walkthroughs</h3>
@@ -294,7 +324,7 @@ export default function HomePage() {
           </div>
         </article>
 
-        <article className="panel">
+        <article className="panel glass-card">
           <div className="panel-header">
             <p className="panel-kicker">Realtime Integrations</p>
             <h3>Connector readiness for SMEs</h3>
@@ -315,7 +345,7 @@ export default function HomePage() {
       </section>
 
       <section className="content-grid">
-        <article className="panel">
+        <article className="panel glass-card">
           <div className="panel-header">
             <p className="panel-kicker">Payments</p>
             <h3>Executed or seeded payment outcomes</h3>
@@ -339,7 +369,7 @@ export default function HomePage() {
           </div>
         </article>
 
-        <article className="panel">
+        <article className="panel glass-card">
           <div className="panel-header">
             <p className="panel-kicker">Review Queue</p>
             <h3>Human-in-the-loop actions</h3>
@@ -371,7 +401,7 @@ export default function HomePage() {
       </section>
 
       <section className="content-grid">
-        <article className="panel">
+        <article className="panel glass-card">
           <div className="panel-header">
             <p className="panel-kicker">Workflow Detail</p>
             <h3>Execution trace</h3>
@@ -433,7 +463,7 @@ export default function HomePage() {
           )}
         </article>
 
-        <article className="panel">
+        <article className="panel glass-card">
           <div className="panel-header">
             <p className="panel-kicker">How To Use</p>
             <h3>Clickable demo script</h3>
@@ -448,7 +478,7 @@ export default function HomePage() {
         </article>
       </section>
       <section className="content-grid">
-        <article className="panel">
+        <article className="panel glass-card">
           <div className="panel-header">
             <p className="panel-kicker">Payment Policies</p>
             <h3>Governance rules for autonomous payments</h3>

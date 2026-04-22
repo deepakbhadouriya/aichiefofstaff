@@ -1,11 +1,29 @@
 :root {
   --bg: #f5efe4;
-  --panel: rgba(255, 252, 246, 0.9);
+  --panel: rgba(255, 252, 246, 0.75);
   --ink: #1f1a17;
   --muted: #645a52;
   --accent: #0a7f6f;
   --accent-soft: #d5efe9;
-  --line: rgba(31, 26, 23, 0.08);
+  --line: rgba(31, 26, 23, 0.05);
+  --gold: #d4af37;
+}
+
+@keyframes meshGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes pulseScale {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 * {
@@ -17,11 +35,12 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100%;
-  background:
-    radial-gradient(circle at top left, rgba(10, 127, 111, 0.18), transparent 30%),
-    linear-gradient(180deg, #f8f3ea 0%, #efe6d4 100%);
+  background: linear-gradient(-45deg, #f8f3ea, #efe6d4, #d5efe9, #f5efe4);
+  background-size: 400% 400%;
+  animation: meshGradient 15s ease infinite;
   color: var(--ink);
-  font-family: Georgia, "Times New Roman", serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 body {
@@ -387,6 +406,54 @@ body {
 .animate-fade-in {
   animation: fadeIn 0.4s ease forwards;
 }
+
+.animate-slide-up {
+  opacity: 0;
+  animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Chief of Staff Additions */
+.briefing-panel {
+  border-left: 4px solid var(--gold);
+  background: linear-gradient(90deg, rgba(212, 175, 55, 0.05) 0%, transparent 100%);
+}
+
+.briefing-text {
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1.6;
+  color: var(--ink);
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--accent);
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+  animation: pulseScale 2s infinite;
+}
+
+.glass-card {
+  background: rgba(255, 252, 246, 0.6);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow: 0 8px 32px rgba(31, 26, 23, 0.05);
+}
+
+.premium-stat {
+  background: linear-gradient(135deg, var(--accent), #086356);
+  color: white;
+  border: none;
+}
+
+.premium-stat p, .premium-stat h2 {
+  color: white !important;
+}
+
+.trend-up { color: #0a7f6f; font-size: 0.8rem; font-weight: 700; }
+.trend-down { color: #8f3c2d; font-size: 0.8rem; font-weight: 700; }
 
 /* Policy Management Styles */
 .policy-grid {
