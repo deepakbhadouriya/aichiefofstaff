@@ -12,6 +12,7 @@ from libs.schemas.runtime import WorkflowRunRecord
 from libs.schemas.workflow import WorkflowRunRequest
 from libs.time import utc_now
 from services.audit.service import get_workflow_run, list_audit_events, list_reviews, save_workflow_record
+from services.demo.service import demo_scenarios, seed_demo_data
 from services.integrations.service import get_realtime_snapshot
 from services.ledger_sync.service import list_ledger_syncs
 from services.payments.orchestration import (
@@ -156,6 +157,33 @@ class AcceptanceCriteriaTests(unittest.TestCase):
         snapshot = get_realtime_snapshot("demo-tenant", "actual_user")
         self.assertEqual(snapshot.overall_status, "attention_required")
         self.assertTrue(any(connector.status.startswith("pending") for connector in snapshot.connectors))
+
+    def test_seed_demo_data_creates_happy_and_negative_scenarios_for_demo_user(self) -> None:
+        seeded = seed_demo_data("demo-tenant", "demo_user")
+        self.assertEqual(seeded.scenario_count, 4)
+        self.assertEqual(len(seeded.workflow_ids), 4)
+        self.assertGreaterEqual(seeded.payment_count, 2)
+        self.assertGreaterEqual(seeded.review_queue_count, 1)
+
+        workflows = [get_workflow_run("demo-tenant", "demo_user", workflow_id) for workflow_id in seeded.workflow_ids]
+        decisions = {workflow.decision for workflow in workflows}
+        states = {workflow.current_state for workflow in workflows}
+
+        self.assertIn("approved_for_autopay", decisions)
+        self.assertIn("requires_human_review", decisions)
+        self.assertIn("closed", states)
+        self.assertIn("ledger_updated", states)
+
+    def test_demo_scenarios_and_connector_labels_match_sme_language(self) -> None:
+        scenarios = demo_scenarios()
+        self.assertGreaterEqual(len(scenarios), 5)
+        self.assertTrue(any(item.title == "Happy path utility autopay" for item in scenarios))
+
+        demo_snapshot = get_realtime_snapshot("demo-tenant", "demo_user")
+        product_names = {item.product_name for item in demo_snapshot.connectors}
+        self.assertIn("Setu BBPS", product_names)
+        self.assertIn("Zoho Books SME Ledger", product_names)
+        self.assertIn("Google Workspace Gmail", product_names)
 
 
 if __name__ == "__main__":

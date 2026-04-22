@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from apps.api.app.routes import health, integrations, policies, profiles, reviews, transactions, workflows
+from apps.api.app.routes import demo, health, integrations, policies, profiles, reviews, transactions, workflows
 from libs.db.settings import get_settings
 
 settings = get_settings()
@@ -12,6 +12,7 @@ app = FastAPI(
 )
 
 app.include_router(health.router)
+app.include_router(demo.router, prefix="/api/v1")
 app.include_router(profiles.router, prefix="/api/v1")
 app.include_router(integrations.router, prefix="/api/v1")
 app.include_router(policies.router, prefix="/api/v1")

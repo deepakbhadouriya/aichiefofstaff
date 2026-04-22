@@ -6,8 +6,8 @@ const cards = [
   },
   {
     title: "Realtime Connectors",
-    value: "6 tracked",
-    detail: "BBPS, ERP sync, and communications status across demo and live modes",
+    value: "Setu + SME stack",
+    detail: "BBPS, TallyPrime or Zoho Books, Gmail or Microsoft 365 across demo and live modes",
   },
   {
     title: "Seeded Records",
@@ -40,14 +40,37 @@ const connectors = [
     detail: "Mock realtime polling for demo_user and live-ready credentials path for actual_user",
   },
   {
-    product: "ERP / Ledger Sync",
+    product: "TallyPrime or Zoho Books",
     status: "Awaiting tenant mapping",
     detail: "Seeded journal events today, live posting path ready for onboarding",
   },
   {
-    product: "Mailbox Sync",
+    product: "Google Workspace or Microsoft 365",
     status: "OAuth pending",
     detail: "Seeded invoice threads visible now, realtime mail sync ready for activation",
+  },
+];
+
+const scenarios = [
+  {
+    title: "Tata Power utility autopay",
+    outcome: "Happy path",
+    detail: "Auto-approved below threshold, paid, and synced to the ledger adapter.",
+  },
+  {
+    title: "Airtel Business broadband renewal",
+    outcome: "Happy path",
+    detail: "Recurring SME internet bill clears automatically under the broadband policy.",
+  },
+  {
+    title: "High amount electricity bill",
+    outcome: "Negative scenario",
+    detail: "Escalates into human review because it breaches the configured threshold.",
+  },
+  {
+    title: "Fresh Pest Control new vendor",
+    outcome: "Negative scenario",
+    detail: "Low historical evidence forces review and is usually rejected in the demo walkthrough.",
   },
 ];
 
@@ -108,6 +131,40 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+        </article>
+      </section>
+
+      <section className="content-grid">
+        <article className="panel">
+          <div className="panel-header">
+            <p className="panel-kicker">Seeded Scenarios</p>
+            <h3>Happy and negative workflows ready to demo</h3>
+          </div>
+          <div className="review-list">
+            {scenarios.map((scenario) => (
+              <div className="review-row" key={scenario.title}>
+                <div>
+                  <strong>{scenario.title}</strong>
+                  <p>{scenario.detail}</p>
+                </div>
+                <span>{scenario.outcome}</span>
+              </div>
+            ))}
+          </div>
+        </article>
+
+        <article className="panel">
+          <div className="panel-header">
+            <p className="panel-kicker">How To Test</p>
+            <h3>Demo-user walkthrough inside the app</h3>
+          </div>
+          <ul className="rule-list">
+            <li>Use `X-Profile-ID: demo_user` and call `POST /api/v1/demo/seed` once.</li>
+            <li>Open `GET /api/v1/payments` to see seeded happy-path payment outcomes.</li>
+            <li>Open `GET /api/v1/reviews` to inspect the high-amount and new-vendor review cases.</li>
+            <li>Approve or reject review items through the review endpoints to watch the queue update.</li>
+            <li>Switch to `X-Profile-ID: actual_user` to verify live-ready connector labels and switch-over posture.</li>
+          </ul>
         </article>
       </section>
     </main>
