@@ -1,575 +1,222 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
 const PERSONA_CHOICES = [
-  {
-    id: "demo_user",
-    label: "Demo Finance Manager",
-    summary: "Seeded workflows, happy paths, and review cases ready to click through.",
-  },
-  {
-    id: "actual_user",
-    label: "Actual Finance Operator",
-    summary: "Live-ready connector mode that stays safe until real credentials are onboarded.",
-  },
+  { id: "demo_user", label: "Startup Founder", summary: "Pre-seed founder with chaotic SaaS subscriptions and utility bills." },
+  { id: "actual_user", label: "Executive Owner", summary: "Established SME owner connecting real bank and workspace data." },
 ];
 
-async function callApi(path, { method = "GET", profileId = "demo_user", body } = {}) {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      "X-Tenant-ID": "demo-tenant",
-      "X-Profile-ID": profileId,
-      "X-Request-ID": `ui-${profileId}-${Date.now()}`,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-
-  if (!response.ok) {
-    const text = await response.text();
-    throw new Error(text || `Request failed with ${response.status}`);
-  }
-
-  return response.json();
-}
-
-function formatMoney(amountMinor, currency = "INR") {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 2,
-  }).format(amountMinor / 100);
-}
+const CONNECTORS = [
+  { id: "gmail", label: "Gmail", status: "active" },
+  { id: "drive", label: "Drive", status: "active" },
+  { id: "bank", label: "Banking", status: "active" },
+  { id: "calendar", label: "Calendar", status: "idle" },
+  { id: "sms", label: "SMS", status: "idle" },
+];
 
 export default function HomePage() {
-  const [selectedProfile, setSelectedProfile] = useState("demo_user");
+  const router = useRouter();
   const [sessionStarted, setSessionStarted] = useState(false);
+  const [selectedProfile, setSelectedProfile] = useState("demo_user");
   const [profile, setProfile] = useState(null);
-  const [scenarios, setScenarios] = useState([]);
   const [payments, setPayments] = useState([]);
   const [reviews, setReviews] = useState([]);
-  const [integrations, setIntegrations] = useState([]);
   const [policies, setPolicies] = useState([]);
-  const [workflowDetail, setWorkflowDetail] = useState(null);
   const [auditEvents, setAuditEvents] = useState([]);
-  const [seedResult, setSeedResult] = useState(null);
-  const [showPolicyModal, setShowPolicyModal] = useState(false);
-  const [newPolicy, setNewPolicy] = useState({
-    category: "utility",
-    vendor_name: "",
-    max_amount_minor: 50000,
-    currency: "INR",
-    requires_hitl_above_minor: 20000,
-  });
-  const [statusMessage, setStatusMessage] = useState("Choose a persona to start the interactive demo.");
+  const [statusMessage, setStatusMessage] = useState("Agent initialized. Awaiting executive command.");
   const [loading, setLoading] = useState(false);
+  const [agentThinking, setAgentThinking] = useState(false);
 
-  async function refreshConsole(profileId = selectedProfile) {
+  // Mock Executive Tasks
+  const [tasks, setTasks] = useState([
+    { id: "task-1", type: "calendar", title: "Board Meeting Prep", time: "2:00 PM", status: "autonomous" },
+    { id: "task-2", type: "sms", title: "Vendor Payment Reminder", time: "4:30 PM", status: "pending" },
+  ]);
+
+  async function callApi(path, options = {}) {
+    const { method = "GET", body, profileId = selectedProfile } = options;
+    const res = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Profile-ID": profileId,
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  }
+
+  async function refreshAgent(profileId = selectedProfile) {
     setLoading(true);
+    setAgentThinking(true);
     try {
-      const [profileData, scenarioData, paymentData, reviewData, integrationData, policyData] = await Promise.all([
+      const [profileData, paymentData, reviewData, policyData] = await Promise.all([
         callApi("/api/v1/profiles/me", { profileId }),
-        callApi("/api/v1/demo/scenarios", { profileId }),
         callApi("/api/v1/payments", { profileId }),
         callApi("/api/v1/reviews", { profileId }),
-        callApi("/api/v1/integrations/realtime", { profileId }),
         callApi("/api/v1/policies", { profileId }),
       ]);
       setProfile(profileData);
-      setScenarios(scenarioData.filter((item) => item.persona === profileId));
       setPayments(paymentData);
       setReviews(reviewData);
-      setIntegrations(integrationData.connectors);
       setPolicies(policyData);
-      setStatusMessage(`Loaded ${profileData.display_name} console data.`);
+      setStatusMessage(`Agent synced with ${profileData.display_name}'s executive context.`);
     } catch (error) {
-      setStatusMessage(`Unable to load console data: ${error.message}`);
+      setStatusMessage(`Sync failed: ${error.message}`);
     } finally {
       setLoading(false);
+      setTimeout(() => setAgentThinking(false), 1000);
     }
   }
 
-  async function handleCreatePolicy(e) {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      await callApi("/api/v1/policies", {
-        method: "POST",
-        profileId: selectedProfile,
-        body: newPolicy,
-      });
-      setShowPolicyModal(false);
-      setStatusMessage(`Created policy for ${newPolicy.vendor_name}.`);
-      await refreshConsole(selectedProfile);
-    } catch (error) {
-      setStatusMessage(`Failed to create policy: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function startSession(profileId) {
+  function startSession(profileId) {
     setSelectedProfile(profileId);
     setSessionStarted(true);
-    await refreshConsole(profileId);
+    refreshAgent(profileId);
   }
 
-  async function handleSeed() {
-    setLoading(true);
-    try {
-      const seeded = await callApi("/api/v1/demo/seed", {
-        method: "POST",
-        profileId: selectedProfile,
-      });
-      setSeedResult(seeded);
-      setStatusMessage(`Seeded ${seeded.scenario_count} demo scenarios for ${selectedProfile}.`);
-      await refreshConsole(selectedProfile);
-    } catch (error) {
-      setStatusMessage(`Seeding failed: ${error.message}`);
-      setLoading(false);
-    }
-  }
-
-  async function handleWorkflowOpen(workflowId) {
-    setLoading(true);
-    try {
-      const [workflow, events] = await Promise.all([
-        callApi(`/api/v1/workflows/${workflowId}`, { profileId: selectedProfile }),
-        callApi(`/api/v1/workflows/${workflowId}/audit-events`, { profileId: selectedProfile }),
-      ]);
-      setWorkflowDetail(workflow);
-      setAuditEvents(events);
-      setStatusMessage(`Loaded workflow ${workflowId}.`);
-    } catch (error) {
-      setStatusMessage(`Could not load workflow: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleReviewDecision(workflowId, action) {
-    setLoading(true);
-    try {
-      await callApi(`/api/v1/reviews/${workflowId}/${action}`, {
-        method: "POST",
-        profileId: selectedProfile,
-      });
-      setStatusMessage(`${action === "approve" ? "Approved" : "Rejected"} ${workflowId}.`);
-      await refreshConsole(selectedProfile);
-      await handleWorkflowOpen(workflowId);
-    } catch (error) {
-      setStatusMessage(`Review action failed: ${error.message}`);
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    if (sessionStarted) {
-      refreshConsole(selectedProfile);
-    }
-  }, [selectedProfile]);
-
-  const cards = [
-    {
-      title: "Interactive Session",
-      value: sessionStarted ? profile?.display_name || "Active" : "Waiting",
-      detail: sessionStarted
-        ? `Signed in as ${selectedProfile} with live API data`
-        : "Sign in with a persona to open the demo console",
-    },
-    {
-      title: "Review Queue",
-      value: `${reviews.length} pending`,
-      detail: "Approve or reject threshold breaches and weak-evidence vendor scenarios from the UI",
-    },
-    {
-      title: "Payments",
-      value: `${payments.length} loaded`,
-      detail: "Seeded outcomes for demo flows or live-ready records for actual operators",
-    },
-  ];
+  const formatMoney = (minor, cur = "INR") =>
+    new Intl.NumberFormat("en-IN", { style: "currency", currency: cur }).format(minor / 100);
 
   return (
     <main className="page-shell">
-      <section className="hero glass-card animate-slide-up" style={{ animationDelay: '0.1s' }}>
-        <p className="eyebrow"><span className="pulse-dot"></span>Chief of Staff Active</p>
-        <h1>Autonomous Finance for SME Owners.</h1>
+      {/* Agentic Core */}
+      <div className="agent-core-container animate-fade-in">
+        <div 
+          className={`agent-core ${agentThinking ? "thinking" : ""}`} 
+          onClick={() => refreshAgent()}
+          title="Click to re-sync agent brain"
+        />
+      </div>
+
+      <header className="hero animate-slide-up" style={{ animationDelay: "0.1s" }}>
+        <h1>CHIEF OF STAFF</h1>
         <p className="hero-copy">
-          Your AI Chief of Staff manages your recurring bills, validates them against your policies, 
-          and handles reconciliation while you focus on growth.
+          Autonomous Bill Ops & Executive Task Management. 
+          Connected to your workspace, bank, and calendar.
         </p>
-      </section>
+      </header>
 
-      {profile && (
-        <section className="panel briefing-panel animate-slide-up" style={{ animationDelay: '0.2s', marginTop: '24px' }}>
-          <div className="panel-header">
-            <p className="panel-kicker">Morning Briefing • {new Date().toLocaleDateString('en-IN', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
-          </div>
-          <p className="briefing-text">
-            Good morning, {profile.display_name.split(' ')[0]}. 
-            I've identified <strong>{reviews.length} items</strong> requiring your attention today. 
-            <strong> {payments.length} utility bills</strong> are scheduled for autopay within your ₹{formatMoney(500000)} threshold. 
-            Your cash position remains healthy for all scheduled outflows.
-          </p>
-          <div className="action-row">
-            <button className="primary-button" onClick={() => setStatusMessage("Reviewing all pending items...")}>
-              Resolve All Flags
-            </button>
-            <button className="secondary-button" onClick={() => setStatusMessage("Generating monthly trend report...")}>
-              Download Monthly Pulse
-            </button>
-          </div>
-        </section>
-      )}
-
-      <section className="content-grid">
-        <article className="panel glass-card login-panel animate-slide-up" style={{ animationDelay: '0.3s' }}>
-          <div className="panel-header">
-            <p className="panel-kicker">Sign In</p>
-            <h3>Select a persona</h3>
-          </div>
-          <div className="persona-list">
-            {PERSONA_CHOICES.map((persona) => (
-              <button
-                className={`persona-card-button ${selectedProfile === persona.id ? "active" : ""}`}
-                key={persona.id}
-                onClick={() => startSession(persona.id)}
-                type="button"
-              >
-                <span className="panel-kicker">{persona.id}</span>
-                <strong>{persona.label}</strong>
-                <span>{persona.summary}</span>
-              </button>
-            ))}
-          </div>
-          <div className="action-row">
-            <button className="primary-button" onClick={handleSeed} type="button" disabled={!sessionStarted || loading}>
-              Seed Demo Data
-            </button>
-            <button className="secondary-button" onClick={() => refreshConsole(selectedProfile)} type="button" disabled={!sessionStarted || loading}>
-              Refresh Console
-            </button>
-            <a href="/onboarding" className="secondary-button" style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-              Create New Account
-            </a>
-          </div>
-          <p className="status-banner">{loading ? "Working..." : statusMessage}</p>
-          {seedResult ? (
-            <div className="mini-summary">
-              <strong>Latest seed result</strong>
-              <p>{seedResult.scenario_count} scenarios loaded</p>
-              <p>{seedResult.payment_count} payments ready</p>
-              <p>{seedResult.review_queue_count} reviews awaiting action</p>
-            </div>
-          ) : null}
-        </article>
-
-        <article className="panel glass-card animate-slide-up" style={{ animationDelay: '0.4s' }}>
-          <div className="panel-header">
-            <p className="panel-kicker">Active Profile</p>
-            <h3>{profile?.display_name || "No session yet"}</h3>
-          </div>
-          {profile ? (
-            <div className="detail-stack">
-              <p>{profile.description}</p>
-              <p>Mode: {profile.operating_mode}</p>
-              <p>Capabilities: {profile.capabilities.join(", ")}</p>
-              <p>{profile.integration_status_summary}</p>
-            </div>
-          ) : (
-            <p className="empty-state">Choose `demo_user` or `actual_user` to load the operator console.</p>
-          )}
-        </article>
-      </section>
-
-      <section className="card-grid">
-        <article className="stat-card glass-card premium-stat animate-slide-up" style={{ animationDelay: '0.5s' }}>
-          <p className="card-label">Monthly Spend</p>
-          <h2>{formatMoney(payments.reduce((acc, p) => acc + p.amount_minor, 0))}</h2>
-          <p><span className="trend-down">↓ 4.2%</span> vs last month</p>
-        </article>
-        <article className="stat-card glass-card animate-slide-up" style={{ animationDelay: '0.6s' }}>
-          <p className="card-label">Autopay Success</p>
-          <h2>98.5%</h2>
-          <p>12 bills automated this week</p>
-        </article>
-        <article className="stat-card glass-card animate-slide-up" style={{ animationDelay: '0.7s' }}>
-          <p className="card-label">Anomalies Detected</p>
-          <h2>{reviews.length}</h2>
-          <p>Flags raised for your review</p>
-        </article>
-      </section>
-
-      <section className="content-grid">
-        <article className="panel glass-card">
-          <div className="panel-header">
-            <p className="panel-kicker">Seeded Scenarios</p>
-            <h3>Happy and negative SME walkthroughs</h3>
-          </div>
-          <div className="review-list">
-            {scenarios.map((scenario) => (
-              <div className="review-row" key={scenario.id}>
-                <div>
-                  <strong>{scenario.title}</strong>
-                  <p>{scenario.walkthrough_hint}</p>
-                </div>
-                <span>{scenario.expected_outcome}</span>
-              </div>
-            ))}
-            {!scenarios.length ? <p className="empty-state">Sign in to load seeded scenario guidance.</p> : null}
-          </div>
-        </article>
-
-        <article className="panel glass-card">
-          <div className="panel-header">
-            <p className="panel-kicker">Realtime Integrations</p>
-            <h3>Connector readiness for SMEs</h3>
-          </div>
-          <div className="review-list">
-            {integrations.map((connector) => (
-              <div className="review-row" key={connector.id}>
-                <div>
-                  <strong>{connector.product_name}</strong>
-                  <p>{connector.status_message}</p>
-                </div>
-                <span>{connector.status}</span>
-              </div>
-            ))}
-            {!integrations.length ? <p className="empty-state">Connector status loads after sign-in.</p> : null}
-          </div>
-        </article>
-      </section>
-
-      <section className="content-grid">
-        <article className="panel glass-card">
-          <div className="panel-header">
-            <p className="panel-kicker">Payments</p>
-            <h3>Executed or seeded payment outcomes</h3>
-          </div>
-          <div className="table-list">
-            {payments.map((payment) => (
-              <button
-                className="table-row-button"
-                key={payment.id}
-                onClick={() => handleWorkflowOpen(payment.workflow_run_id)}
-                type="button"
-              >
-                <div>
-                  <strong>{payment.vendor_name}</strong>
-                  <p>{payment.integration_mode}</p>
-                </div>
-                <span>{formatMoney(payment.amount_minor, payment.currency)}</span>
-              </button>
-            ))}
-            {!payments.length ? <p className="empty-state">No payments loaded yet. Seed the demo to populate this view.</p> : null}
-          </div>
-        </article>
-
-        <article className="panel glass-card">
-          <div className="panel-header">
-            <p className="panel-kicker">Review Queue</p>
-            <h3>Human-in-the-loop actions</h3>
-          </div>
-          <div className="review-list">
-            {reviews.map((review) => (
-              <div className="action-card" key={review.workflow_run_id}>
-                <div>
-                  <strong>{review.vendor_name}</strong>
-                  <p>{review.reason}</p>
-                  <p>{formatMoney(review.amount_minor, "INR")}</p>
-                </div>
-                <div className="action-row">
-                  <button className="secondary-button" onClick={() => handleWorkflowOpen(review.workflow_run_id)} type="button">
-                    Inspect
-                  </button>
-                  <button className="primary-button" onClick={() => handleReviewDecision(review.workflow_run_id, "approve")} type="button">
-                    Approve
-                  </button>
-                  <button className="danger-button" onClick={() => handleReviewDecision(review.workflow_run_id, "reject")} type="button">
-                    Reject
-                  </button>
-                </div>
-              </div>
-            ))}
-            {!reviews.length ? <p className="empty-state">No pending reviews for the current persona.</p> : null}
-          </div>
-        </article>
-      </section>
-
-      <section className="content-grid">
-        <article className="panel glass-card">
-          <div className="panel-header">
-            <p className="panel-kicker">Workflow Detail</p>
-            <h3>Execution trace</h3>
-          </div>
-          {workflowDetail ? (
-            <div className="detail-stack">
-              <div className="stat-card" style={{ marginBottom: '24px' }}>
-                <p className="card-label">Terminal State</p>
-                <h2>{workflowDetail.current_state}</h2>
-                <p>Outcome: {workflowDetail.decision}</p>
-              </div>
-
-              <div className="panel-header">
-                <p className="panel-kicker">Retrieved Evidence</p>
-              </div>
-              <div className="evidence-list">
-                {workflowDetail.evidence.map((item, index) => (
-                  <div className="evidence-card" key={`${item.source}-${index}`}>
-                    <strong>{item.source}</strong>
-                    <p>{item.summary}</p>
-                    <div className="evidence-viz">
-                      <div className="confidence-label">
-                        <span>Confidence</span>
-                        <span>{Math.round(item.confidence * 100)}%</span>
-                      </div>
-                      <div className="confidence-bar-bg">
-                        <div 
-                          className="confidence-bar-fill" 
-                          style={{ width: `${item.confidence * 100}%`, background: item.confidence > 0.8 ? '#0a7f6f' : '#8f3c2d' }} 
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="panel-header" style={{ marginTop: '32px' }}>
-                <p className="panel-kicker">Execution Timeline</p>
-              </div>
-              <div className="timeline">
-                {auditEvents.map((event, index) => (
-                  <div className="timeline-item animate-fade-in" key={event.id}>
-                    <div className={`timeline-dot ${index === auditEvents.length - 1 ? 'active' : ''}`}>
-                      {index + 1}
-                    </div>
-                    <div className="timeline-content">
-                      <h4>{event.event_type.replace(/_/g, ' ')}</h4>
-                      <p>{JSON.stringify(event.payload)}</p>
-                      <div className="timeline-time">
-                        {new Date(event.created_at).toLocaleTimeString()}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <p className="empty-state">Open a payment or review item to inspect the workflow.</p>
-          )}
-        </article>
-
-        <article className="panel glass-card">
-          <div className="panel-header">
-            <p className="panel-kicker">How To Use</p>
-            <h3>Clickable demo script</h3>
-          </div>
-          <ul className="rule-list">
-            <li>Sign in as `demo_user` to load the seeded finance walkthrough.</li>
-            <li>Click `Seed Demo Data` once to create happy-path and negative-path runs.</li>
-            <li>Open a payment to inspect the completed workflow trace.</li>
-            <li>Open a review item and approve it to watch the run move through payment and ledger sync.</li>
-            <li>Switch to `actual_user` to inspect the live-ready connector posture for real SMEs.</li>
-          </ul>
-        </article>
-      </section>
-      <section className="content-grid">
-        <article className="panel glass-card">
-          <div className="panel-header">
-            <p className="panel-kicker">Payment Policies</p>
-            <h3>Governance rules for autonomous payments</h3>
-          </div>
-          <div className="action-row">
-            <button className="primary-button" onClick={() => setShowPolicyModal(true)} disabled={!sessionStarted}>
-              New Policy
-            </button>
-          </div>
-          <div className="policy-grid">
-            {policies.map((policy) => (
-              <div className="policy-card animate-fade-in" key={policy.id}>
-                <div className="policy-header">
-                  <span className={`status-tag ${policy.status}`}>{policy.status}</span>
-                  <span className="panel-kicker">{policy.category}</span>
-                </div>
-                <strong>{policy.vendor_name}</strong>
-                <div className="policy-amount">{formatMoney(policy.max_amount_minor, policy.currency)}</div>
-                <div className="policy-meta">
-                  HITL trigger above {formatMoney(policy.requires_hitl_above_minor, policy.currency)}
-                </div>
-              </div>
-            ))}
-            {!policies.length ? <p className="empty-state">No policies defined for this tenant.</p> : null}
-          </div>
-        </article>
-      </section>
-
-      {showPolicyModal && (
-        <div className="modal-overlay" onClick={() => setShowPolicyModal(false)}>
-          <div className="panel modal-content animate-fade-in" onClick={(e) => e.stopPropagation()}>
-            <div className="panel-header">
-              <p className="panel-kicker">Governance</p>
-              <h3>Create Payment Policy</h3>
-            </div>
-            <form className="onboarding-form" onSubmit={handleCreatePolicy}>
-              <div className="form-group">
-                <label>Vendor Name</label>
-                <input
-                  className="form-input"
-                  placeholder="e.g. Tata Power"
-                  required
-                  value={newPolicy.vendor_name}
-                  onChange={(e) => setNewPolicy({ ...newPolicy, vendor_name: e.target.value })}
-                />
-              </div>
-              <div className="form-group">
-                <label>Category</label>
-                <select
-                  className="form-input"
-                  value={newPolicy.category}
-                  onChange={(e) => setNewPolicy({ ...newPolicy, category: e.target.value })}
-                >
-                  <option value="utility">Utility</option>
-                  <option value="telecom">Telecom</option>
-                  <option value="software">SaaS</option>
-                  <option value="vendor">General Vendor</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Max Autopay Limit (₹)</label>
-                <input
-                  type="number"
-                  className="form-input"
-                  value={newPolicy.max_amount_minor / 100}
-                  onChange={(e) => setNewPolicy({ ...newPolicy, max_amount_minor: e.target.value * 100 })}
-                />
-              </div>
-              <div className="form-group">
-                <label>HITL Threshold (₹)</label>
-                <p className="hero-copy" style={{ fontSize: '0.8rem', margin: '0 0 8px' }}>
-                  Payments above this will require human approval.
-                </p>
-                <input
-                  type="number"
-                  className="form-input"
-                  value={newPolicy.requires_hitl_above_minor / 100}
-                  onChange={(e) => setNewPolicy({ ...newPolicy, requires_hitl_above_minor: e.target.value * 100 })}
-                />
-              </div>
-              <div className="action-row">
-                <button className="primary-button" type="submit" disabled={loading}>
-                  {loading ? "Creating..." : "Save Policy"}
-                </button>
-                <button className="secondary-button" type="button" onClick={() => setShowPolicyModal(false)}>
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
+      {/* Connectivity Hub */}
+      <section className="panel glass-card animate-slide-up" style={{ animationDelay: "0.2s" }}>
+        <div className="panel-header">
+          <p className="panel-kicker">Agentic Context</p>
+          <h3>Active Connectors</h3>
         </div>
+        <div className="connectors-grid">
+          {CONNECTORS.map((c) => (
+            <div className={`connector-pill ${c.status === "active" ? "active" : ""}`} key={c.id}>
+              <span className="connector-dot"></span>
+              {c.label}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {!sessionStarted ? (
+        <section className="content-grid animate-slide-up" style={{ animationDelay: "0.3s" }}>
+          <article className="panel">
+            <div className="panel-header">
+              <p className="panel-kicker">Initialize</p>
+              <h3>Select Persona</h3>
+            </div>
+            <div className="persona-list">
+              {PERSONA_CHOICES.map((p) => (
+                <button className="persona-card-button" key={p.id} onClick={() => startSession(p.id)}>
+                  <strong>{p.label}</strong>
+                  <p>{p.summary}</p>
+                </button>
+              ))}
+            </div>
+          </article>
+        </section>
+      ) : (
+        <>
+          {/* Executive Briefing */}
+          <section className="panel briefing-panel animate-slide-up" style={{ animationDelay: "0.3s", marginTop: "24px" }}>
+            <div className="panel-header">
+              <p className="panel-kicker">Briefing • {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+            </div>
+            <p className="briefing-text">
+              {profile?.display_name.split(' ')[0]}, I'm currently monitoring your <strong>Gmail</strong> for invoices. 
+              Found <strong>{payments.length} scheduled payments</strong> for this week. 
+              I've also prepared your <strong>Drive folder</strong> for the tax audit. 
+              You have {reviews.length} anomalies needing executive sign-off.
+            </p>
+          </section>
+
+          {/* Unified Agentic Feed */}
+          <div className="content-grid">
+            <section className="panel animate-slide-up" style={{ animationDelay: "0.4s" }}>
+              <div className="panel-header">
+                <p className="panel-kicker">Unified Feed</p>
+                <h3>Active Intelligence Thread</h3>
+              </div>
+              <div className="agentic-feed">
+                {/* Finance Items */}
+                {payments.map(p => (
+                  <div className="feed-item" key={p.id}>
+                    <div className="feed-icon">₹</div>
+                    <div>
+                      <strong>Bill Paid: {p.vendor_name}</strong>
+                      <p>Matched invoice from Gmail #234 to Drive receipt.</p>
+                    </div>
+                    <div className="trend-up">{formatMoney(p.amount_minor)}</div>
+                  </div>
+                ))}
+                {/* Executive Tasks */}
+                {tasks.map(t => (
+                  <div className="feed-item" key={t.id}>
+                    <div className="feed-icon">{t.type === 'calendar' ? '📅' : '📱'}</div>
+                    <div>
+                      <strong>{t.title}</strong>
+                      <p>{t.status === 'autonomous' ? 'Agent is preparing context documents.' : 'Awaiting your direction.'}</p>
+                    </div>
+                    <div className="panel-kicker">{t.time}</div>
+                  </div>
+                ))}
+                {/* Review Items */}
+                {reviews.map(r => (
+                  <div className="feed-item" key={r.workflow_run_id} style={{ borderColor: 'var(--gold)' }}>
+                    <div className="feed-icon" style={{ color: 'var(--gold)' }}>⚠</div>
+                    <div>
+                      <strong>Anomaly: {r.vendor_name}</strong>
+                      <p>Amount exceeds your autopay policy. Review needed.</p>
+                    </div>
+                    <button className="primary-button" style={{ padding: '8px 16px', fontSize: '0.8rem' }}>Review</button>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Strategic Insights */}
+            <section className="panel animate-slide-up" style={{ animationDelay: "0.5s" }}>
+              <div className="panel-header">
+                <p className="panel-kicker">Strategic Pulse</p>
+                <h3>Autonomous Insights</h3>
+              </div>
+              <div className="stat-card" style={{ marginTop: '20px' }}>
+                <p className="card-label">SaaS Burn Rate</p>
+                <h2>₹1,24,000</h2>
+                <p><span className="trend-down">↓ 8%</span> after I canceled idle seats.</p>
+              </div>
+              <div className="stat-card" style={{ marginTop: '20px' }}>
+                <p className="card-label">Cash Runway</p>
+                <h2>14 Months</h2>
+                <p>Based on current burn and bank balance.</p>
+              </div>
+              <div className="action-row" style={{ marginTop: '32px' }}>
+                <button className="secondary-button" style={{ width: '100%' }}>View Full Ledger</button>
+                <button className="secondary-button" style={{ width: '100%' }}>Ask Chief of Staff...</button>
+              </div>
+            </section>
+          </div>
+        </>
       )}
     </main>
   );
