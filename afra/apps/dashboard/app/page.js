@@ -1,30 +1,26 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 
 const API_BASE_URL = "http://127.0.0.1:8000";
 
-const PERSONA_CHOICES = [
-  { id: "sme_owner", label: "SME AI Chief of Staff", summary: "The executive digital twin with custom communication and decision logic." },
-  { id: "admin_user", label: "System Administrator", summary: "Full platform control and connector management." },
-];
-
-export default function LifeOSApp() {
+export default function FintechDashboard() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [activeTab, setActiveTab] = useState("dashboard"); // dashboard, inbox, crm, lab
-  const [selectedProfile, setSelectedProfile] = useState("sme_owner");
+  const [activeTab, setActiveTab] = useState("dashboard"); // dashboard, review, transactions, rules
+  const [selectedWorkflow, setSelectedWorkflow] = useState(null);
+  
+  // App State
   const [profile, setProfile] = useState(null);
   const [payments, setPayments] = useState([]);
   const [reviews, setReviews] = useState([]);
-  const [crm, setCrm] = useState({ contacts: [], recent_interactions: [], nudges: [] });
-  const [workflowDetail, setWorkflowDetail] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [agentThinking, setAgentThinking] = useState(false);
-  const [statusMessage, setStatusMessage] = useState("System Standby");
+  const [statusMessage, setStatusMessage] = useState("AI Agent: System Ready");
+
+  // Rule Builder State
+  const [ruleInput, setRuleInput] = useState("");
+  const [parsedRule, setParsedRule] = useState(null);
 
   async function callApi(path, options = {}) {
-    const { method = "GET", body, profileId = selectedProfile } = options;
+    const { method = "GET", body, profileId = "sme_owner" } = options;
     const res = await fetch(`${API_BASE_URL}${path}`, {
       method,
       headers: {
@@ -37,289 +33,394 @@ export default function LifeOSApp() {
     return res.json();
   }
 
-  async function syncAgent() {
-    setLoading(true);
-    setAgentThinking(true);
+  const syncData = async () => {
     try {
-      const [profileData, paymentData, reviewData, crmData] = await Promise.all([
+      const [p, pay, rev] = await Promise.all([
         callApi("/api/v1/profiles/me"),
         callApi("/api/v1/payments"),
         callApi("/api/v1/reviews"),
-        callApi("/api/v1/crm/snapshot"),
       ]);
-      setProfile(profileData);
-      setPayments(paymentData);
-      setReviews(reviewData);
-      setCrm(crmData);
-      setStatusMessage("Agent Synced");
+      setProfile(p);
+      setPayments(pay);
+      setReviews(rev);
     } catch (e) {
       console.error(e);
-    } finally {
-      setLoading(false);
-      setTimeout(() => setAgentThinking(false), 1500);
     }
-  }
+  };
 
   useEffect(() => {
-    if (isLoggedIn) syncAgent();
+    if (isLoggedIn) syncData();
   }, [isLoggedIn]);
 
-  const handleLogin = (id) => {
-    setSelectedProfile(id);
-    setIsLoggedIn(true);
+  const handleRuleInput = (val) => {
+    setRuleInput(val);
+    // Simple mock parsing logic for demo
+    if (val.toLowerCase().includes("electricity") && val.toLowerCase().includes("10000")) {
+      setParsedRule({ category: "Electricity", threshold: "₹10,000", action: "Auto-pay" });
+    } else {
+      setParsedRule(null);
+    }
   };
 
   if (!isLoggedIn) {
     return (
-      <div className="login-container">
-        <div className="login-card">
-          <div className="pulse-large"></div>
-          <h1 style={{ marginBottom: '8px' }}>LifeOS</h1>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '32px' }}>Executive Chief of Staff</p>
-          <div className="persona-list" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {PERSONA_CHOICES.map(p => (
-              <button key={p.id} className="lifeos-button btn-primary" onClick={() => handleLogin(p.id)}>
-                Sign in as {p.label}
-              </button>
-            ))}
+      <div className="login-screen">
+        <div className="login-box">
+          <div className="sidebar-brand" style={{ justifyContent: 'center', marginBottom: '40px' }}>
+            <span>Afra</span>
           </div>
+          <h2 style={{ textAlign: 'center', marginBottom: '8px' }}>Sign in</h2>
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', marginBottom: '32px' }}>Enter your email to receive an OTP</p>
+          
+          <input className="input-field" type="email" placeholder="name@company.com" style={{ marginBottom: '16px' }} />
+          <button className="btn btn-primary" style={{ width: '100%', marginBottom: '16px' }} onClick={() => setIsLoggedIn(true)}>
+            Send OTP
+          </button>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '24px 0' }}>
+            <div style={{ height: '1px', flex: 1, background: 'var(--border)' }}></div>
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>OR</span>
+            <div style={{ height: '1px', flex: 1, background: 'var(--border)' }}></div>
+          </div>
+          
+          <button className="btn btn-outline" style={{ width: '100%' }} onClick={() => setIsLoggedIn(true)}>
+            Login as Demo User
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="lifeos-app">
-      {/* Sidebar Navigation */}
+    <div className="app-shell">
+      {/* Sidebar */}
       <aside className="sidebar">
-        <div className="sidebar-logo">
-          <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: agentThinking ? 'var(--accent)' : '#333', boxShadow: agentThinking ? '0 0 10px var(--accent)' : 'none' }}></div>
-          LifeOS
+        <div className="sidebar-brand">
+          <div style={{ width: '24px', height: '24px', background: 'var(--primary)', borderRadius: '6px' }}></div>
+          Afra
         </div>
         
-        <nav className="nav-group">
-          <button className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
-            <span>📊</span> Dashboard
+        <nav style={{ display: 'flex', flex_direction: 'column', gap: '4px' }}>
+          <button className={`nav-link ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => { setActiveTab('dashboard'); setSelectedWorkflow(null); }}>
+            Dashboard
           </button>
-          <button className={`nav-item ${activeTab === 'inbox' ? 'active' : ''}`} onClick={() => setActiveTab('inbox')}>
-            <span>📬</span> Intelligence Inbox {reviews.length > 0 && <span style={{ marginLeft: 'auto', background: 'var(--gold)', color: '#000', padding: '2px 8px', borderRadius: '10px', fontSize: '0.7rem' }}>{reviews.length}</span>}
+          <button className={`nav-link ${activeTab === 'review' ? 'active' : ''}`} onClick={() => { setActiveTab('review'); setSelectedWorkflow(null); }}>
+            Review Queue
           </button>
-          <button className={`nav-item ${activeTab === 'crm' ? 'active' : ''}`} onClick={() => setActiveTab('crm')}>
-            <span>🤝</span> Relationship Pulse
+          <button className={`nav-link ${activeTab === 'transactions' ? 'active' : ''}`} onClick={() => { setActiveTab('transactions'); setSelectedWorkflow(null); }}>
+            Transactions
           </button>
-          <button className={`nav-item ${activeTab === 'lab' ? 'active' : ''}`} onClick={() => setActiveTab('lab')}>
-            <span>🧠</span> Instruction Lab
+          <button className={`nav-link ${activeTab === 'rules' ? 'active' : ''}`} onClick={() => { setActiveTab('rules'); setSelectedWorkflow(null); }}>
+            Rule Builder
           </button>
         </nav>
 
-        <div style={{ marginTop: 'auto', padding: '16px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
-          <p className="panel-title" style={{ fontSize: '0.65rem' }}>Agent Status</p>
-          <p style={{ fontSize: '0.85rem', color: agentThinking ? 'var(--accent)' : 'var(--text-muted)' }}>
-            {agentThinking ? "Thinking..." : "Listening..."}
-          </p>
+        <div style={{ marginTop: 'auto', padding: '12px' }}>
+          <div className="ai-status">
+            <div className="pulse"></div>
+            {statusMessage}
+          </div>
         </div>
       </aside>
 
-      {/* Main Viewport */}
-      <main className="main-viewport">
-        <header style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1 style={{ fontSize: '1.8rem', fontWeight: '800' }}>{activeTab.toUpperCase()}</h1>
-            <p style={{ color: 'var(--text-muted)' }}>Welcome back, {profile?.display_name || "Executive"}</p>
-          </div>
-          <button className="lifeos-button" style={{ width: 'auto', padding: '10px 20px', background: 'rgba(255,255,255,0.05)', color: 'white' }} onClick={() => setIsLoggedIn(false)}>
-            Lock Console
-          </button>
-        </header>
-
-        {activeTab === 'dashboard' && <DashboardView crm={crm} payments={payments} reviews={reviews} />}
-        {activeTab === 'inbox' && <InboxView reviews={reviews} workflowDetail={workflowDetail} setWorkflowDetail={setWorkflowDetail} callApi={callApi} />}
-        {activeTab === 'crm' && <CRMView crm={crm} />}
-        {activeTab === 'lab' && <LabView profile={profile} setProfile={setProfile} callApi={callApi} setStatusMessage={setStatusMessage} />}
+      {/* Main Content */}
+      <main className="main-content">
+        {selectedWorkflow ? (
+          <TransactionDetailView workflow={selectedWorkflow} onBack={() => setSelectedWorkflow(null)} />
+        ) : (
+          <>
+            {activeTab === 'dashboard' && <DashboardView payments={payments} reviews={reviews} onAction={() => setActiveTab('rules')} onDetail={setSelectedWorkflow} callApi={callApi} />}
+            {activeTab === 'review' && <ReviewQueueView reviews={reviews} onDetail={setSelectedWorkflow} callApi={callApi} sync={syncData} />}
+            {activeTab === 'transactions' && <TransactionsView payments={payments} onDetail={setSelectedWorkflow} callApi={callApi} />}
+            {activeTab === 'rules' && <RuleBuilderView input={ruleInput} onInput={handleRuleInput} parsed={parsedRule} />}
+          </>
+        )}
       </main>
     </div>
   );
 }
 
-function DashboardView({ crm, payments, reviews }) {
+function DashboardView({ payments, reviews, onAction, onDetail, callApi }) {
   return (
-    <div className="dashboard-grid">
-      <div className="glass-panel">
-        <div className="panel-header">
-          <p className="panel-title">Strategic Insight</p>
-          <h3>Cash Runway</h3>
-        </div>
-        <h2 style={{ fontSize: '2.5rem', margin: '12px 0' }}>14 Months</h2>
-        <p style={{ color: 'var(--text-muted)' }}>Calculated from {payments.length} recurring outflows and current reserves.</p>
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+        <h2>Dashboard</h2>
+        <button className="btn btn-primary" onClick={onAction}>Create Rule</button>
       </div>
 
-      <div className="glass-panel">
-        <div className="panel-header">
-          <p className="panel-title">Relationship Pulse</p>
-          <h3>Active Stakeholders</h3>
+      <div className="metrics-grid">
+        <div className="metric-card">
+          <p className="metric-label">Total Bills This Month</p>
+          <p className="metric-value">{payments.length + reviews.length}</p>
         </div>
-        <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
-          {crm.contacts.map(c => (
-            <div key={c.id} title={c.name} style={{ width: '40px', height: '40px', borderRadius: '50%', background: 'var(--bg-deep)', border: `2px solid ${c.status === 'Stale' ? '#ff3366' : 'var(--accent)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {c.name[0]}
-            </div>
-          ))}
+        <div className="metric-card">
+          <p className="metric-label">Auto-paid</p>
+          <p className="metric-value" style={{ color: 'var(--success)' }}>{payments.length}</p>
+        </div>
+        <div className="metric-card">
+          <p className="metric-label">Pending Review</p>
+          <p className="metric-value" style={{ color: 'var(--warning)' }}>{reviews.length}</p>
+        </div>
+        <div className="metric-card">
+          <p className="metric-label">Alerts</p>
+          <p className="metric-value" style={{ color: 'var(--danger)' }}>2</p>
         </div>
       </div>
 
-      <div className="glass-panel full-width">
-        <div className="panel-header">
-          <p className="panel-title">Recent Intelligence</p>
-          <h3>Agent Activity Thread</h3>
-        </div>
-        <div className="feed">
-          {payments.slice(0, 3).map(p => (
-            <div className="feed-item" key={p.id}>
-              <div className="feed-icon">₹</div>
-              <div>
-                <strong>Auto-paid {p.vendor_name}</strong>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Matched Gmail invoice to bank record.</p>
-              </div>
-              <div style={{ marginLeft: 'auto', fontWeight: '700' }}>₹{(p.amount_minor/100).toLocaleString()}</div>
-            </div>
-          ))}
-        </div>
+      <div className="card">
+        <h3>Recent Transactions</h3>
+        <table className="data-table" style={{ marginTop: '20px' }}>
+          <thead>
+            <tr>
+              <th>Vendor</th>
+              <th>Date</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {payments.slice(0, 5).map(p => (
+              <tr key={p.id}>
+                <td style={{ fontWeight: 600 }}>{p.vendor_name}</td>
+                <td>{new Date(p.created_at).toLocaleDateString()}</td>
+                <td>₹{(p.amount_minor/100).toLocaleString()}</td>
+                <td><span className="badge badge-success">Auto-paid</span></td>
+                <td><button className="btn btn-outline" style={{ padding: '6px 12px' }} onClick={async () => {
+                  const detail = await callApi(`/api/v1/workflows/wf-sme_owner-${p.vendor_name.toLowerCase().replace(' ', '-')}`);
+                  onDetail(detail);
+                }}>View</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
 
-function InboxView({ reviews, workflowDetail, setWorkflowDetail, callApi }) {
-  async function fetchDetail(id) {
-    const data = await callApi(`/api/v1/workflows/${id}`);
-    setWorkflowDetail(data);
-  }
-
+function RuleBuilderView({ input, onInput, parsed }) {
   return (
-    <div className="dashboard-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
-      <div className="glass-panel">
-        <div className="panel-header">
-          <p className="panel-title">Action Required</p>
-          <h3>Intelligence Anomalies</h3>
-        </div>
-        <div className="feed">
-          {reviews.map(r => (
-            <div key={r.workflow_run_id} className={`feed-item ${workflowDetail?.id === r.workflow_run_id ? 'active' : ''}`} onClick={() => fetchDetail(r.workflow_run_id)} style={{ cursor: 'pointer', borderLeft: workflowDetail?.id === r.workflow_run_id ? '4px solid var(--gold)' : 'none' }}>
-              <div className="feed-icon" style={{ color: 'var(--gold)' }}>⚠</div>
+    <div style={{ maxWidth: '600px' }}>
+      <h2 style={{ marginBottom: '32px' }}>Create New Rule</h2>
+      <div className="card">
+        <p className="metric-label" style={{ marginBottom: '12px' }}>Natural Language Input</p>
+        <textarea 
+          className="input-field" 
+          placeholder="e.g. Auto-pay electricity bills under ₹10,000" 
+          style={{ height: '100px', resize: 'none' }}
+          value={input}
+          onChange={(e) => onInput(e.target.value)}
+        />
+        
+        {parsed && (
+          <div style={{ marginTop: '32px', padding: '20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid var(--border)' }}>
+            <p className="metric-label" style={{ marginBottom: '16px' }}>AI Parsed Logic</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div>
-                <strong>Review: {r.vendor_name}</strong>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Exceeds autopay threshold.</p>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Category</p>
+                <p style={{ fontWeight: 600 }}>{parsed.category}</p>
+              </div>
+              <div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Threshold</p>
+                <p style={{ fontWeight: 600 }}>{parsed.threshold}</p>
+              </div>
+              <div>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Action</p>
+                <p style={{ fontWeight: 600 }}>{parsed.action}</p>
               </div>
             </div>
-          ))}
-          {reviews.length === 0 && <p style={{ opacity: 0.3, padding: '20px' }}>Inbox zero. Agent is operating autonomously.</p>}
-        </div>
-      </div>
-
-      <div className="glass-panel">
-        <div className="panel-header">
-          <p className="panel-title">Chain of Thought</p>
-          <h3>Agentic Reasoning</h3>
-        </div>
-        {workflowDetail ? (
-          <div className="detail-view">
-            <div style={{ background: 'rgba(0,0,0,0.2)', padding: '16px', borderRadius: '12px', fontFamily: 'monospace', fontSize: '0.85rem', color: 'var(--accent)' }}>
-              {workflowDetail.reasoning?.split(' | ').map((step, i) => (
-                <div key={i} style={{ marginBottom: '8px' }}>
-                  <span style={{ opacity: 0.4 }}>[{i+1}]</span> {step}
-                </div>
-              ))}
-            </div>
-            <div style={{ marginTop: '24px', display: 'flex', gap: '12px' }}>
-              <button className="lifeos-button btn-primary">Approve Payment</button>
-              <button className="lifeos-button" style={{ background: 'rgba(255,255,255,0.05)', color: 'white' }}>Reject & Draft Reply</button>
-            </div>
-          </div>
-        ) : (
-          <div style={{ height: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0.2 }}>
-            Select an anomaly to inspect brain state.
           </div>
         )}
+
+        <div style={{ marginTop: '32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <p style={{ fontWeight: 600 }}>Require approval above threshold</p>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Flag bills exceeding the limit for manual review.</p>
+          </div>
+          <div style={{ width: '40px', height: '20px', background: 'var(--primary)', borderRadius: '20px', position: 'relative' }}>
+            <div style={{ width: '16px', height: '16px', background: 'white', borderRadius: '50%', position: 'absolute', right: '2px', top: '2px' }}></div>
+          </div>
+        </div>
+
+        <button className="btn btn-primary" style={{ width: '100%', marginTop: '32px' }}>Save Rule</button>
       </div>
     </div>
   );
 }
 
-function CRMView({ crm }) {
+function ReviewQueueView({ reviews, onDetail, callApi, sync }) {
   return (
-    <div className="glass-panel">
-      <div className="panel-header">
-        <p className="panel-title">Stakeholder Pulse</p>
-        <h3>Executive Relationships</h3>
-      </div>
-      <div className="feed">
-        {crm.contacts.map(c => (
-          <div className="feed-item" key={c.id}>
-            <div className="feed-icon">{c.name[0]}</div>
-            <div>
-              <strong>{c.name} ({c.company})</strong>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{c.summary}</p>
+    <div>
+      <h2 style={{ marginBottom: '32px' }}>Review Queue</h2>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '24px' }}>
+        {reviews.map(r => (
+          <div className="card" key={r.workflow_run_id}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '20px' }}>
+              <div>
+                <h4 style={{ fontSize: '1.1rem' }}>{r.vendor_name}</h4>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Biller Ref: {r.workflow_run_id.split('-').pop()}</p>
+              </div>
+              <p style={{ fontSize: '1.25rem', fontWeight: 700 }}>₹{(r.amount_minor/100).toLocaleString()}</p>
             </div>
-            <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-              <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: c.status === 'Stale' ? '#ff3366' : 'var(--accent)' }}>{c.status}</div>
-              <div style={{ fontSize: '0.8rem', opacity: 0.5 }}>{new Date(c.last_interaction_at).toLocaleDateString()}</div>
+            
+            <div style={{ padding: '12px', background: '#fffbeb', borderRadius: '8px', border: '1px solid #fef3c7', marginBottom: '24px' }}>
+              <p style={{ fontSize: '0.85rem', color: '#92400e' }}><strong>Reason:</strong> {r.reason}</p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button className="btn btn-primary" style={{ flex: 1 }}>Approve</button>
+              <button className="btn btn-outline" style={{ flex: 1 }}>Reject</button>
+              <button className="btn btn-outline" style={{ padding: '10px' }} onClick={async () => {
+                const detail = await callApi(`/api/v1/workflows/${r.workflow_run_id}`);
+                onDetail(detail);
+              }}>Details</button>
             </div>
           </div>
         ))}
+        {reviews.length === 0 && <p style={{ color: 'var(--text-muted)' }}>Nothing to review. All systems nominal.</p>}
       </div>
     </div>
   );
 }
 
-function LabView({ profile, setProfile, callApi, setStatusMessage }) {
-  const [loading, setLoading] = useState(false);
-
-  const handleUpdate = async () => {
-    setLoading(true);
-    try {
-      await callApi("/api/v1/profiles/me/context", { 
-        method: "POST", 
-        body: { 
-          communication_style: profile.communication_style,
-          decision_preferences: profile.decision_preferences
-        }
-      });
-      setStatusMessage("Brain Updated");
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+function TransactionsView({ payments, onDetail, callApi }) {
   return (
-    <div className="glass-panel" style={{ maxWidth: '800px' }}>
-      <div className="panel-header">
-        <p className="panel-title">Instruction Lab</p>
-        <h3>Agent Brain Configuration</h3>
+    <div>
+      <h2 style={{ marginBottom: '32px' }}>All Transactions</h2>
+      <div className="card">
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Vendor</th>
+              <th>Date</th>
+              <th>Amount</th>
+              <th>Method</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {payments.map(p => (
+              <tr key={p.id}>
+                <td style={{ fontWeight: 600 }}>{p.vendor_name}</td>
+                <td>{new Date(p.created_at).toLocaleDateString()}</td>
+                <td>₹{(p.amount_minor/100).toLocaleString()}</td>
+                <td><span style={{ color: 'var(--text-muted)' }}>Bank Transfer</span></td>
+                <td><span className="badge badge-success">Success</span></td>
+                <td><button className="btn btn-outline" style={{ padding: '6px 12px' }} onClick={async () => {
+                  const detail = await callApi(`/api/v1/workflows/wf-sme_owner-${p.vendor_name.toLowerCase().replace(' ', '-')}`);
+                  onDetail(detail);
+                }}>View</button></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      <div style={{ marginTop: '24px' }}>
-        <div style={{ marginBottom: '24px' }}>
-          <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Communication Context (Style of Speech)</label>
-          <textarea 
-            className="lifeos-input" 
-            style={{ height: '120px', resize: 'vertical' }}
-            value={profile?.communication_style || ""}
-            onChange={(e) => setProfile({...profile, communication_style: e.target.value})}
-          />
+    </div>
+  );
+}
+
+function TransactionDetailView({ workflow, onBack }) {
+  const isAutoPay = workflow.decision === 'approved_for_autopay';
+  const isPending = workflow.current_state === 'pending_human_review';
+  
+  return (
+    <div style={{ maxWidth: '1000px' }}>
+      <button className="nav-link" onClick={onBack} style={{ marginBottom: '24px', width: 'auto' }}>← Back to Dashboard</button>
+      
+      <div className="card" style={{ marginBottom: '32px' }}>
+        <p className="metric-label" style={{ marginBottom: '24px' }}>Agentic Decision Path</p>
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '20px', background: '#f8fafc', borderRadius: '12px' }}>
+          <svg width="600" height="240" viewBox="0 0 600 240">
+            {/* Core Nodes */}
+            <FlowNode x={300} y={40} label="Fetch Bill" active={true} />
+            <FlowNode x={300} y={100} label="Validate & Decision Gate" active={true} />
+            
+            {/* Branches */}
+            <path d="M 300 120 L 150 160" stroke={isAutoPay ? "var(--primary)" : "#e3e8ee"} strokeWidth="2" fill="none" />
+            <path d="M 300 120 L 450 160" stroke={!isAutoPay ? "var(--warning)" : "#e3e8ee"} strokeWidth="2" fill="none" />
+            
+            <FlowNode x={150} y={180} label="Auto Pay" active={isAutoPay} type="auto" />
+            <FlowNode x={450} y={180} label="Human Review" active={!isAutoPay} type="hitl" />
+            
+            {/* Final Path */}
+            <path d="M 150 200 L 300 240" stroke={isAutoPay ? "var(--primary)" : "#e3e8ee"} strokeWidth="2" fill="none" />
+            <path d="M 450 200 L 300 240" stroke={!isAutoPay ? "var(--primary)" : "#e3e8ee"} strokeWidth="2" fill="none" />
+            
+            <circle cx="300" cy="240" r="6" fill={workflow.current_state === 'ledger_updated' ? "var(--success)" : "#e3e8ee"} />
+            <text x="315" y="245" fontSize="10" fill="var(--text-muted)">Audit + Notify</text>
+          </svg>
         </div>
-        <div style={{ marginBottom: '32px' }}>
-          <label style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Decision Context (Operational Choices)</label>
-          <textarea 
-            className="lifeos-input" 
-            style={{ height: '120px', resize: 'vertical' }}
-            value={profile?.decision_preferences || ""}
-            onChange={(e) => setProfile({...profile, decision_preferences: e.target.value})}
-          />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px' }}>
+        <div>
+          <div className="card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+              <div>
+                <h2>{workflow.request.vendor_name}</h2>
+                <p style={{ color: 'var(--text-muted)' }}>Payment for {workflow.request.category}</p>
+              </div>
+              <h2 style={{ fontSize: '2rem' }}>₹{(workflow.amount_minor/100).toLocaleString()}</h2>
+            </div>
+            
+            <div style={{ background: '#f0f9ff', padding: '16px', borderRadius: '12px', border: '1px solid #bae6fd', marginBottom: '24px' }}>
+              <p className="metric-label" style={{ color: 'var(--primary)', marginBottom: '8px' }}>AI Context</p>
+              <p style={{ fontSize: '0.85rem', lineHeight: '1.5' }}>{workflow.reasoning?.split(' | ').pop() || "Analyzing context..."}</p>
+            </div>
+            
+            <h3>Intelligence Evidence</h3>
+            <div style={{ display: 'flex', gap: '16px', marginTop: '16px' }}>
+              {workflow.evidence.map(e => (
+                <div key={e.source_id} style={{ width: '100px', height: '140px', background: 'white', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: '1.5rem' }}>📄</span>
+                  <p style={{ fontSize: '0.6rem', marginTop: '8px', textTransform: 'uppercase' }}>{e.source_type}</p>
+                  <p style={{ fontSize: '0.7rem', color: 'var(--success)', fontWeight: 700 }}>{Math.round(e.confidence * 100)}%</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
-        <button className="lifeos-button btn-primary" onClick={handleUpdate} disabled={loading}>
-          {loading ? "Updating Agent Brain..." : "Deploy Instructions"}
-        </button>
+
+        <div className="card">
+          <p className="metric-label" style={{ marginBottom: '16px' }}>Audit Details</p>
+          <div style={{ fontSize: '0.85rem' }}>
+            <p style={{ marginBottom: '12px' }}><span style={{ color: 'var(--text-muted)' }}>Workflow:</span> {workflow.id}</p>
+            <p style={{ marginBottom: '12px' }}><span style={{ color: 'var(--text-muted)' }}>Status:</span> <strong>{workflow.current_state}</strong></p>
+            <p style={{ marginBottom: '12px' }}><span style={{ color: 'var(--text-muted)' }}>Request:</span> {workflow.x_request_id}</p>
+          </div>
+          {isPending && (
+            <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <button className="btn btn-primary">Approve & Execute</button>
+              <button className="btn btn-outline">Reject Payment</button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FlowNode({ x, y, label, active, type }) {
+  const color = type === 'auto' ? 'var(--primary)' : type === 'hitl' ? 'var(--warning)' : 'var(--text-main)';
+  return (
+    <g>
+      <rect x={x - 80} y={y - 20} width={160} height={40} rx="8" fill="white" stroke={active ? color : "#e3e8ee"} strokeWidth="2" style={{ filter: active ? 'drop-shadow(0 0 4px rgba(0,0,0,0.05))' : 'none' }} />
+      <text x={x} y={y + 5} textAnchor="middle" fontSize="11" fontWeight={active ? "600" : "400"} fill={active ? "var(--text-main)" : "var(--text-muted)"}>{label}</text>
+      {active && <circle cx={x - 70} cy={y} r="4" fill={color} />}
+    </g>
+  );
+}
+
+function TimelineItem({ label, date, active }) {
+  return (
+    <div className="timeline-item">
+      <div className={`timeline-dot ${active ? 'active' : ''}`}></div>
+      <div className="timeline-line"></div>
+      <div style={{ flex: 1 }}>
+        <p style={{ fontWeight: 600, fontSize: '0.9rem', color: active ? 'var(--text-main)' : 'var(--text-muted)' }}>{label}</p>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{active ? new Date(date).toLocaleString() : 'Pending'}</p>
       </div>
     </div>
   );
