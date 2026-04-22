@@ -27,6 +27,7 @@ export default function HomePage() {
   const [reviews, setReviews] = useState([]);
   const [policies, setPolicies] = useState([]);
   const [auditEvents, setAuditEvents] = useState([]);
+  const [crm, setCrm] = useState({ contacts: [], recent_interactions: [], nudges: [] });
   const [statusMessage, setStatusMessage] = useState("Agent initialized. Awaiting executive command.");
   const [loading, setLoading] = useState(false);
   const [agentThinking, setAgentThinking] = useState(false);
@@ -55,16 +56,18 @@ export default function HomePage() {
     setLoading(true);
     setAgentThinking(true);
     try {
-      const [profileData, paymentData, reviewData, policyData] = await Promise.all([
+      const [profileData, paymentData, reviewData, policyData, crmData] = await Promise.all([
         callApi("/api/v1/profiles/me", { profileId }),
         callApi("/api/v1/payments", { profileId }),
         callApi("/api/v1/reviews", { profileId }),
         callApi("/api/v1/policies", { profileId }),
+        callApi("/api/v1/crm/snapshot", { profileId }),
       ]);
       setProfile(profileData);
       setPayments(paymentData);
       setReviews(reviewData);
       setPolicies(policyData);
+      setCrm(crmData);
       setStatusMessage(`Agent synced with ${profileData.display_name}'s executive context.`);
     } catch (error) {
       setStatusMessage(`Sync failed: ${error.message}`);
@@ -210,10 +213,35 @@ export default function HomePage() {
                 <h2>14 Months</h2>
                 <p>Based on current burn and bank balance.</p>
               </div>
-              <div className="action-row" style={{ marginTop: '32px' }}>
-                <button className="secondary-button" style={{ width: '100%' }}>View Full Ledger</button>
-                <button className="secondary-button" style={{ width: '100%' }}>Ask Chief of Staff...</button>
+            </section>
+
+            {/* Relationship Pulse (Executive CRM) */}
+            <section className="panel animate-slide-up" style={{ animationDelay: "0.6s" }}>
+              <div className="panel-header">
+                <p className="panel-kicker">Relationship Pulse</p>
+                <h3>Executive CRM</h3>
               </div>
+              <div className="agentic-feed" style={{ marginTop: '20px' }}>
+                {crm.contacts.map(contact => (
+                  <div className="feed-item" key={contact.id} style={{ borderLeft: `4px solid ${contact.status === 'Stale' ? '#ff3366' : contact.status === 'Cooling' ? 'var(--gold)' : 'var(--accent)'}` }}>
+                    <div className="feed-icon">{contact.name[0]}</div>
+                    <div>
+                      <strong>{contact.name} ({contact.company})</strong>
+                      <p>{contact.summary}</p>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>Status: {contact.status} • Last: {new Date(contact.last_interaction_at).toLocaleDateString()}</span>
+                    </div>
+                    <button className="secondary-button" style={{ padding: '6px 12px', fontSize: '0.7rem' }}>Sync Activity</button>
+                  </div>
+                ))}
+              </div>
+              {crm.nudges.length > 0 && (
+                <div className="mini-summary" style={{ background: 'rgba(255, 204, 0, 0.05)', borderColor: 'var(--gold)', marginTop: '24px' }}>
+                  <p className="panel-kicker" style={{ color: 'var(--gold)' }}>Agent Nudges</p>
+                  {crm.nudges.map((nudge, idx) => (
+                    <p key={idx} style={{ fontSize: '0.9rem', marginBottom: '8px' }}>• {nudge}</p>
+                  ))}
+                </div>
+              )}
             </section>
           </div>
         </>

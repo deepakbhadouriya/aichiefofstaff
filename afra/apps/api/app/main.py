@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from apps.api.app.routes import (
+    crm,
     demo,
     health,
     integrations,
@@ -37,6 +38,7 @@ app.add_middleware(
 
 app.include_router(health.router)
 app.include_router(onboarding.router, prefix="/api/v1")
+app.include_router(crm.router, prefix="/api/v1")
 app.include_router(demo.router, prefix="/api/v1")
 app.include_router(profiles.router, prefix="/api/v1")
 app.include_router(integrations.router, prefix="/api/v1")
