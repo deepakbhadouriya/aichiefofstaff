@@ -50,15 +50,17 @@ afra/
 This is a starter scaffold, not a complete payment product. It includes:
 
 - tenant-aware API skeleton
+- dual persona support for `demo_user` and `actual_user`
 - deterministic workflow state model
 - mocked bill fetch and payment validation path
+- realtime integration status endpoints for live connector readiness
 - local Docker development setup
 - dashboard shell for policies, reviews, and transactions
 
 ## Next Steps
 
 - add real LangGraph dependency and checkpoint store
-- implement PostgreSQL migrations
+- replace seeded/in-memory fixtures with persistent repository implementations
 - integrate Setu / BBPS adapter
 - add ERP sync adapter
 - wire authentication and OBO token exchange

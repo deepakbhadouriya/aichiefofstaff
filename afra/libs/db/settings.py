@@ -16,9 +16,10 @@ class Settings(BaseSettings):
     openai_model: str = "gpt-4.1-mini"
     log_level: str = "INFO"
     default_tenant: str = "demo-tenant"
+    default_profile_id: str = "demo_user"
+    realtime_sync_interval_seconds: int = 30
 
 
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-

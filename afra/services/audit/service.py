@@ -17,15 +17,17 @@ def list_reviews(tenant_id: str) -> list[ReviewItem]:
     ]
 
 
-def get_workflow_run(tenant_id: str, workflow_run_id: str) -> WorkflowRunView:
+def get_workflow_run(tenant_id: str, profile_id: str, workflow_run_id: str) -> WorkflowRunView:
     return WorkflowRunView(
         id=workflow_run_id,
         tenant_id=tenant_id,
+        profile_id=profile_id,
         x_request_id="req-local-dev",
         current_state="pending_human_review",
         decision="requires_human_review",
         amount_minor=640000,
         currency="INR",
+        integration_mode="demo_seeded" if profile_id == "demo_user" else "live_connectors",
         requires_human_review=True,
         evidence=[
             WorkflowEvidence(
@@ -36,4 +38,3 @@ def get_workflow_run(tenant_id: str, workflow_run_id: str) -> WorkflowRunView:
         ],
         created_at=datetime.now(UTC),
     )
-

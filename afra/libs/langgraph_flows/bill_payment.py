@@ -10,12 +10,14 @@ from services.payments.service import fetch_live_bill
 @dataclass
 class BillPaymentState:
     tenant_id: str
+    profile_id: str
     x_request_id: str
     request: WorkflowRunRequest
     current_state: str = "created"
     decision: str = "pending"
     amount_minor: int = 0
     currency: str = "INR"
+    integration_mode: str = "demo_seeded"
     requires_human_review: bool = False
     evidence: list[WorkflowEvidence] = field(default_factory=list)
 
@@ -23,8 +25,19 @@ class BillPaymentState:
 class BillPaymentFlow:
     """A deterministic scaffold mirroring the LangGraph nodes from the blueprint."""
 
-    def run(self, tenant_id: str, x_request_id: str, request: WorkflowRunRequest) -> WorkflowRunView:
-        state = BillPaymentState(tenant_id=tenant_id, x_request_id=x_request_id, request=request)
+    def run(
+        self,
+        tenant_id: str,
+        profile_id: str,
+        x_request_id: str,
+        request: WorkflowRunRequest,
+    ) -> WorkflowRunView:
+        state = BillPaymentState(
+            tenant_id=tenant_id,
+            profile_id=profile_id,
+            x_request_id=x_request_id,
+            request=request,
+        )
         self.context_definition(state)
         self.retrieve_context(state)
         self.fetch_bill(state)
@@ -33,11 +46,13 @@ class BillPaymentFlow:
         return WorkflowRunView(
             id=f"wf-{request.biller_reference.lower()}",
             tenant_id=state.tenant_id,
+            profile_id=state.profile_id,
             x_request_id=state.x_request_id,
             current_state=state.current_state,
             decision=state.decision,
             amount_minor=state.amount_minor,
             currency=state.currency,
+            integration_mode=state.integration_mode,
             requires_human_review=state.requires_human_review,
             evidence=state.evidence,
             created_at=datetime.now(UTC),
@@ -58,12 +73,15 @@ class BillPaymentFlow:
 
     def fetch_bill(self, state: BillPaymentState) -> None:
         bill = fetch_live_bill(
+            tenant_id=state.tenant_id,
+            profile_id=state.profile_id,
             vendor_name=state.request.vendor_name,
             biller_reference=state.request.biller_reference,
             amount_minor_hint=state.request.amount_minor_hint,
         )
         state.amount_minor = bill["amount_minor"]
         state.currency = bill["currency"]
+        state.integration_mode = str(bill["integration_mode"])
         state.current_state = "bill_fetched"
 
     def validate_bill(self, state: BillPaymentState) -> None:
@@ -80,4 +98,3 @@ class BillPaymentFlow:
         else:
             state.decision = "approved_for_autopay"
             state.current_state = "approved"
-

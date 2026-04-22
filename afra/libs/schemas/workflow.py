@@ -19,12 +19,13 @@ class WorkflowEvidence(BaseModel):
 class WorkflowRunView(BaseModel):
     id: str
     tenant_id: str
+    profile_id: str
     x_request_id: str
     current_state: str
     decision: str
     amount_minor: int
     currency: str
+    integration_mode: str
     requires_human_review: bool
     evidence: list[WorkflowEvidence]
     created_at: datetime
-

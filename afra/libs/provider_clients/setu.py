@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 
 @dataclass
@@ -8,6 +9,13 @@ class SetuBill:
     amount_minor: int
     currency: str = "INR"
     status: str = "outstanding"
+
+
+@dataclass
+class ConnectorHeartbeat:
+    status: str
+    checked_at: datetime
+    message: str
 
 
 class SetuClient:
@@ -23,5 +31,18 @@ class SetuClient:
             vendor_name=vendor_name,
             biller_reference=biller_reference,
             amount_minor=amount_minor_hint or 420000,
+        )
+
+    def heartbeat(self, live_mode: bool) -> ConnectorHeartbeat:
+        if live_mode:
+            return ConnectorHeartbeat(
+                status="pending_credentials",
+                checked_at=datetime.now(UTC),
+                message="Live BBPS transport is configured in code and waiting for provider secrets.",
+            )
+        return ConnectorHeartbeat(
+            status="healthy",
+            checked_at=datetime.now(UTC),
+            message="Demo BBPS polling is healthy with seeded balances and deterministic responses.",
         )
 

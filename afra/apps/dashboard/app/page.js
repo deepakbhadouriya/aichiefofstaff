@@ -1,31 +1,53 @@
 const cards = [
   {
-    title: "Auto-pay Rules",
-    value: "12 active",
-    detail: "Electricity, telecom, internet, and approved vendor billers",
+    title: "Personas",
+    value: "2 profiles",
+    detail: "Seeded demo access plus live connector mode for actual operators",
   },
   {
-    title: "Pending Reviews",
-    value: "3 flagged",
-    detail: "Threshold breaches and unusual amount variance",
+    title: "Realtime Connectors",
+    value: "6 tracked",
+    detail: "BBPS, ERP sync, and communications status across demo and live modes",
   },
   {
-    title: "Payments Today",
-    value: "27 processed",
-    detail: "24 succeeded, 2 pending, 1 awaiting approval",
+    title: "Seeded Records",
+    value: "Demo-ready",
+    detail: "Invoices, payment history, and approvals available until actual sources go live",
   },
 ];
 
-const reviews = [
+const personas = [
   {
-    vendor: "Tata Power",
-    amount: "INR 6,400.00",
-    reason: "Above policy threshold",
+    label: "Persona 1",
+    name: "Demo Finance Manager",
+    mode: "demo_seeded",
+    detail:
+      "Uses seeded bills, vendor history, and review queue data so prospects and internal teams can explore the workflow immediately.",
   },
   {
-    vendor: "Airtel Business",
-    amount: "INR 18,200.00",
-    reason: "Historical variance detected",
+    label: "Persona 2",
+    name: "Actual Finance Operator",
+    mode: "live_connectors",
+    detail:
+      "Uses real connector definitions with realtime status monitoring, seeded fallback, and production-oriented approval controls.",
+  },
+];
+
+const connectors = [
+  {
+    product: "Setu BBPS",
+    status: "Healthy demo preview",
+    detail: "Mock realtime polling for demo_user and live-ready credentials path for actual_user",
+  },
+  {
+    product: "ERP / Ledger Sync",
+    status: "Awaiting tenant mapping",
+    detail: "Seeded journal events today, live posting path ready for onboarding",
+  },
+  {
+    product: "Mailbox Sync",
+    status: "OAuth pending",
+    detail: "Seeded invoice threads visible now, realtime mail sync ready for activation",
   },
 ];
 
@@ -36,8 +58,9 @@ export default function HomePage() {
         <p className="eyebrow">A-FRA MVP</p>
         <h1>Deterministic bill payments with audit-ready controls.</h1>
         <p className="hero-copy">
-          Define payment rules, monitor execution, and route anomalies into a
-          human approval queue without losing traceability.
+          Define payment rules, monitor realtime connector readiness, and switch
+          between a seeded demo persona and an actual operator persona without
+          losing traceability.
         </p>
       </section>
 
@@ -54,29 +77,34 @@ export default function HomePage() {
       <section className="content-grid">
         <article className="panel">
           <div className="panel-header">
-            <p className="panel-kicker">Policy Builder</p>
-            <h3>Default SME rule profile</h3>
+            <p className="panel-kicker">User Personas</p>
+            <h3>Demo and actual-user operating modes</h3>
           </div>
-          <ul className="rule-list">
-            <li>Auto-pay electricity bills under INR 10,000</li>
-            <li>Flag any telecom bill over historical median by 20%</li>
-            <li>Require HITL approval for new vendor references</li>
-          </ul>
+          <div className="persona-list">
+            {personas.map((persona) => (
+              <div className="persona-row" key={persona.name}>
+                <p className="panel-kicker">{persona.label}</p>
+                <strong>{persona.name}</strong>
+                <p>{persona.mode}</p>
+                <p>{persona.detail}</p>
+              </div>
+            ))}
+          </div>
         </article>
 
         <article className="panel">
           <div className="panel-header">
-            <p className="panel-kicker">Review Queue</p>
-            <h3>Human-in-the-loop decisions</h3>
+            <p className="panel-kicker">Realtime Integrations</p>
+            <h3>Connector readiness and fallback strategy</h3>
           </div>
           <div className="review-list">
-            {reviews.map((review) => (
-              <div className="review-row" key={`${review.vendor}-${review.amount}`}>
+            {connectors.map((connector) => (
+              <div className="review-row" key={connector.product}>
                 <div>
-                  <strong>{review.vendor}</strong>
-                  <p>{review.reason}</p>
+                  <strong>{connector.product}</strong>
+                  <p>{connector.detail}</p>
                 </div>
-                <span>{review.amount}</span>
+                <span>{connector.status}</span>
               </div>
             ))}
           </div>
@@ -85,4 +113,3 @@ export default function HomePage() {
     </main>
   );
 }
-

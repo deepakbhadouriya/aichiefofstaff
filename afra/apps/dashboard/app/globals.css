@@ -108,6 +108,23 @@ body {
   line-height: 1.8;
 }
 
+.persona-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.persona-row {
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(213, 239, 233, 0.55);
+}
+
+.persona-row strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
 .review-list {
   display: grid;
   gap: 14px;
@@ -145,4 +162,3 @@ body {
     align-items: flex-start;
   }
 }
-
