@@ -1,0 +1,148 @@
+:root {
+  --bg: #f5efe4;
+  --panel: rgba(255, 252, 246, 0.9);
+  --ink: #1f1a17;
+  --muted: #645a52;
+  --accent: #0a7f6f;
+  --accent-soft: #d5efe9;
+  --line: rgba(31, 26, 23, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at top left, rgba(10, 127, 111, 0.18), transparent 30%),
+    linear-gradient(180deg, #f8f3ea 0%, #efe6d4 100%);
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+body {
+  min-height: 100vh;
+}
+
+.page-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 24px 72px;
+}
+
+.hero {
+  padding: 28px;
+  border: 1px solid var(--line);
+  border-radius: 28px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(255, 249, 240, 0.94));
+  box-shadow: 0 20px 60px rgba(86, 63, 24, 0.08);
+}
+
+.eyebrow,
+.panel-kicker,
+.card-label {
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.78rem;
+  color: var(--accent);
+}
+
+.hero h1,
+.stat-card h2,
+.panel h3 {
+  margin: 0;
+}
+
+.hero h1 {
+  max-width: 10ch;
+  font-size: clamp(2.8rem, 6vw, 5rem);
+  line-height: 0.96;
+}
+
+.hero-copy {
+  max-width: 54ch;
+  font-size: 1.05rem;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.card-grid,
+.content-grid {
+  display: grid;
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.card-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.content-grid {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.stat-card,
+.panel {
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 24px;
+  background: var(--panel);
+  backdrop-filter: blur(10px);
+}
+
+.stat-card p,
+.panel p,
+.rule-list,
+.review-row p {
+  color: var(--muted);
+}
+
+.rule-list {
+  margin: 20px 0 0;
+  padding-left: 18px;
+  line-height: 1.8;
+}
+
+.review-list {
+  display: grid;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.review-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 18px;
+  background: var(--accent-soft);
+}
+
+.review-row strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+@media (max-width: 700px) {
+  .page-shell {
+    padding: 20px 16px 48px;
+  }
+
+  .hero,
+  .stat-card,
+  .panel {
+    border-radius: 20px;
+  }
+
+  .review-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+

@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "afra-mvp"
+version = "0.1.0"
+description = "Autonomous Financial Reconciliation Agent MVP scaffold"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115.0,<1.0.0",
+  "uvicorn[standard]>=0.30.0,<1.0.0",
+  "pydantic>=2.8.0,<3.0.0",
+  "pydantic-settings>=2.4.0,<3.0.0",
+  "sqlalchemy>=2.0.32,<3.0.0",
+  "psycopg[binary]>=3.2.1,<4.0.0",
+  "redis>=5.0.8,<6.0.0",
+  "httpx>=0.27.0,<1.0.0",
+  "openai>=1.40.0,<2.0.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["apps*", "libs*", "services*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
