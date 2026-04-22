@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     default_tenant: str = "demo-tenant"
     default_profile_id: str = "demo_user"
     realtime_sync_interval_seconds: int = 30
+    runtime_store_path: str = ".runtime/runtime_store.json"
 
 
 @lru_cache

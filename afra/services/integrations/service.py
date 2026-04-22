@@ -1,10 +1,11 @@
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 from libs.db.settings import get_settings
 from libs.provider_clients.erp import ERPClient
 from libs.provider_clients.mailbox import MailboxClient
 from libs.provider_clients.setu import SetuClient
 from libs.schemas.integration import IntegrationRealtimeSnapshot, IntegrationView
+from libs.time import utc_now
 
 _SETU_CLIENT = SetuClient()
 _ERP_CLIENT = ERPClient()
@@ -127,7 +128,7 @@ def get_realtime_snapshot(tenant_id: str, profile_id: str) -> IntegrationRealtim
     return IntegrationRealtimeSnapshot(
         tenant_id=tenant_id,
         profile_id=profile_id,
-        checked_at=datetime.now(UTC),
+        checked_at=utc_now(),
         overall_status=overall_status,
         connectors=connectors,
     )

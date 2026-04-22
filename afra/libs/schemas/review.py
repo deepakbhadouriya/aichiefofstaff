@@ -4,6 +4,7 @@ from pydantic import BaseModel
 class ReviewItem(BaseModel):
     workflow_run_id: str
     tenant_id: str
+    profile_id: str
     vendor_name: str
     amount_minor: int
     reason: str
@@ -13,6 +14,6 @@ class ReviewItem(BaseModel):
 class ReviewDecision(BaseModel):
     workflow_run_id: str
     tenant_id: str
+    profile_id: str
     decision: str
     actor: str
-

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 
+from libs.time import utc_now
 
 @dataclass
 class MailboxHeartbeat:
@@ -14,12 +15,11 @@ class MailboxClient:
         if live_mode:
             return MailboxHeartbeat(
                 status="pending_oauth",
-                checked_at=datetime.now(UTC),
+                checked_at=utc_now(),
                 message="Mailbox sync is waiting for OAuth consent and scoped mailbox access.",
             )
         return MailboxHeartbeat(
             status="healthy",
-            checked_at=datetime.now(UTC),
+            checked_at=utc_now(),
             message="Seeded invoice emails and vendor conversation trails are available for demo mode.",
         )
-

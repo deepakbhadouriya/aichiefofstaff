@@ -7,7 +7,7 @@ name = "afra-mvp"
 version = "0.1.0"
 description = "Autonomous Financial Reconciliation Agent MVP scaffold"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
   "fastapi>=0.115.0,<1.0.0",
   "uvicorn[standard]>=0.30.0,<1.0.0",
@@ -33,4 +33,3 @@ target-version = "py311"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
-

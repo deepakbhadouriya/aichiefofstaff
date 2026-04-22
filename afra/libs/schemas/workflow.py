@@ -28,4 +28,7 @@ class WorkflowRunView(BaseModel):
     integration_mode: str
     requires_human_review: bool
     evidence: list[WorkflowEvidence]
+    payment_intent_id: str | None = None
+    payment_id: str | None = None
+    ledger_sync_id: str | None = None
     created_at: datetime

@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 
+from libs.time import utc_now
 
 @dataclass
 class SetuBill:
@@ -37,12 +38,11 @@ class SetuClient:
         if live_mode:
             return ConnectorHeartbeat(
                 status="pending_credentials",
-                checked_at=datetime.now(UTC),
+                checked_at=utc_now(),
                 message="Live BBPS transport is configured in code and waiting for provider secrets.",
             )
         return ConnectorHeartbeat(
             status="healthy",
-            checked_at=datetime.now(UTC),
+            checked_at=utc_now(),
             message="Demo BBPS polling is healthy with seeded balances and deterministic responses.",
         )
-

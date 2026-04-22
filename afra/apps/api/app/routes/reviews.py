@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from apps.api.app.dependencies import get_request_context
 from libs.schemas.review import ReviewDecision, ReviewItem
 from services.audit.service import list_reviews
+from services.payments.orchestration import reject_review_workflow, resume_review_workflow
 
 router = APIRouter(tags=["reviews"])
 
@@ -19,11 +20,11 @@ def approve_review(
 ) -> ReviewDecision:
     if not workflow_run_id:
         raise HTTPException(status_code=400, detail="workflow_run_id is required")
-    return ReviewDecision(
-        workflow_run_id=workflow_run_id,
-        decision="approved",
-        actor="human-reviewer",
+    return resume_review_workflow(
         tenant_id=context["tenant_id"],
+        profile_id=context["profile_id"],
+        workflow_run_id=workflow_run_id,
+        actor="human-reviewer",
     )
 
 
@@ -34,10 +35,9 @@ def reject_review(
 ) -> ReviewDecision:
     if not workflow_run_id:
         raise HTTPException(status_code=400, detail="workflow_run_id is required")
-    return ReviewDecision(
-        workflow_run_id=workflow_run_id,
-        decision="rejected",
-        actor="human-reviewer",
+    return reject_review_workflow(
         tenant_id=context["tenant_id"],
+        profile_id=context["profile_id"],
+        workflow_run_id=workflow_run_id,
+        actor="human-reviewer",
     )
-

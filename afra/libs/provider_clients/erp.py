@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import datetime
 
+from libs.time import utc_now
 
 @dataclass
 class ERPHeartbeat:
@@ -14,12 +15,11 @@ class ERPClient:
         if live_mode:
             return ERPHeartbeat(
                 status="pending_mapping",
-                checked_at=datetime.now(UTC),
+                checked_at=utc_now(),
                 message="ERP connector is waiting for vendor master and chart-of-accounts mapping.",
             )
         return ERPHeartbeat(
             status="healthy",
-            checked_at=datetime.now(UTC),
+            checked_at=utc_now(),
             message="Seeded ledger sync is ready for walkthrough and audit demonstrations.",
         )
-
