@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, Header
 from typing import Optional
 
-from libs.schemas.onboarding import OnboardingStartRequest, OnboardingStatus
-from services.onboarding.service import start_onboarding, get_onboarding_status, complete_onboarding
+from libs.schemas.onboarding import OnboardingStartRequest, OnboardingStatus, OnboardingIntegrationRequest
+from services.onboarding.service import start_onboarding, get_onboarding_status, complete_onboarding, link_integration
 
 router = APIRouter(tags=["onboarding"])
 
