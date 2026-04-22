@@ -11,6 +11,13 @@ This repository scaffolds the MVP for the Autonomous Financial Reconciliation Ag
 - Frontend: Next.js App Router
 - Deployment: Docker Compose for local development
 
+## Repository Standards
+
+- License: MIT
+- Contribution guide: `CONTRIBUTING.md`
+- CI: GitHub Actions workflow under `.github/workflows/ci.yml`
+- Database bootstrap: SQL migration files under `migrations/`
+
 ## Repository Layout
 
 ```text
