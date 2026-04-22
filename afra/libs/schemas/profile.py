@@ -20,4 +20,7 @@ class UserProfileView(BaseModel):
     capabilities: list[str]
     default_vendor_count: int
     integration_status_summary: str
+    # New Context Instructions (LifeOS inspiration)
+    communication_style: str = "Concise, professional, and firm."
+    decision_preferences: str = "Prioritize cash flow and long-term vendor relationships."
 

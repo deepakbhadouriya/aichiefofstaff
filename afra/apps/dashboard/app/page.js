@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 const API_BASE_URL = "http://127.0.0.1:8000";
 
 const PERSONA_CHOICES = [
-  { id: "demo_user", label: "Startup Founder", summary: "Pre-seed founder with chaotic SaaS subscriptions and utility bills." },
-  { id: "actual_user", label: "Executive Owner", summary: "Established SME owner connecting real bank and workspace data." },
+  { id: "sme_owner", label: "SME AI Chief of Staff", summary: "The executive digital twin with custom communication and decision logic." },
+  { id: "admin_user", label: "System Administrator", summary: "Full platform control, connector management, and audit oversight." },
 ];
 
 const CONNECTORS = [
@@ -21,7 +21,7 @@ const CONNECTORS = [
 export default function HomePage() {
   const router = useRouter();
   const [sessionStarted, setSessionStarted] = useState(false);
-  const [selectedProfile, setSelectedProfile] = useState("demo_user");
+  const [selectedProfile, setSelectedProfile] = useState("sme_owner");
   const [profile, setProfile] = useState(null);
   const [payments, setPayments] = useState([]);
   const [reviews, setReviews] = useState([]);
@@ -242,6 +242,54 @@ export default function HomePage() {
                   ))}
                 </div>
               )}
+            {/* Agent Configuration (Instruction Lab) */}
+            <section className="panel animate-slide-up" style={{ animationDelay: "0.7s" }}>
+              <div className="panel-header">
+                <p className="panel-kicker">Instruction Lab</p>
+                <h3>Agent Context & Prompting</h3>
+              </div>
+              <div className="form-group" style={{ marginTop: '20px' }}>
+                <label>Communication Style (Context File)</label>
+                <textarea 
+                  className="form-input" 
+                  style={{ minHeight: '80px', resize: 'vertical', background: 'rgba(255,255,255,0.02)' }}
+                  value={profile?.communication_style || ""}
+                  onChange={(e) => setProfile({...profile, communication_style: e.target.value})}
+                />
+              </div>
+              <div className="form-group" style={{ marginTop: '16px' }}>
+                <label>Decision Preferences</label>
+                <textarea 
+                  className="form-input" 
+                  style={{ minHeight: '80px', resize: 'vertical', background: 'rgba(255,255,255,0.02)' }}
+                  value={profile?.decision_preferences || ""}
+                  onChange={(e) => setProfile({...profile, decision_preferences: e.target.value})}
+                />
+              </div>
+              <div className="action-row" style={{ marginTop: '20px' }}>
+                <button 
+                  className="primary-button" 
+                  onClick={async () => {
+                    setLoading(true);
+                    try {
+                      await callApi("/api/v1/profiles/me/context", { 
+                        method: "POST", 
+                        body: { 
+                          communication_style: profile.communication_style,
+                          decision_preferences: profile.decision_preferences
+                        }
+                      });
+                      setStatusMessage("Agent context updated successfully.");
+                    } catch (e) {
+                      setStatusMessage("Update failed: " + e.message);
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                >
+                  Update Agent Brain
+                </button>
+              </div>
             </section>
           </div>
         </>
